@@ -2,14 +2,17 @@ package pubsub
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	"oss.nandlabs.io/golly/messaging"
 )
 
 const (
-	SchemesPubSub = "pubsub"
+	SchemesPubSub  = "pubsub"
+	PubSubProvider = "pubsub-provider"
 )
 
 var pubsubSchemes = []string{SchemesPubSub}
@@ -123,16 +126,34 @@ func (p *ProviderPubSub) ReceiveBatch(source *url.URL, options ...messaging.Opti
 }
 
 func (p *ProviderPubSub) AddListener(url *url.URL, listener func(msg messaging.Message), options ...messaging.Option) (err error) {
-	return
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			msgs, err := p.ReceiveBatch(url, options...)
+			if err != nil {
+				return fmt.Errorf("failed to receive messages: %w", err)
+			}
+			for _, msg := range msgs {
+				listener(msg)
+			}
+
+			if len(msgs) == 0 {
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}
 }
 
 func (sqsp *ProviderPubSub) Close() (err error) {
 	// TODO should be used to close the listener
-
 	return
 }
 
 func (sqsp *ProviderPubSub) Id() string {
-	// TODO :: what needs to be provided here with ID
-	return ""
+	return PubSubProvider
 }

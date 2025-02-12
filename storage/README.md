@@ -42,6 +42,12 @@ Storage File System features such as
 Setup the SQS library in order to start using it.
 Under you main pacakge, you can add an init function or any method of your choice to initiate the library
 
+The Priority of the Registered Provider is as follows
+
+```bash
+URL > HOST > Scheme("storage") > default
+```
+
 ```go
 package main
 
@@ -66,6 +72,39 @@ storage://bucketName/folderName.../fileName
 ```
 
 ## Examples
+
+1. Create a bucket/file
+
+    ```go
+    package main
+   
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs"   
+    )
+   
+    func main() {
+        manager := vfs.GetManager()
+        u, err := url.Parse("storage://bucketName")
+        if err != nil {
+            // handle error
+        }
+        file, err := manager.Create(u)
+
+        if err != nil {
+            // handle error
+        }
+        fmt.Println(file.Info())
+    }
+    ```
+
+2. Read a file
+3. Delete a file
+4. Write a file
+5. List all the files in the bucket
+6. Get File Info of an object
+7. Get metadata of an object
+8. Add metadata to an object
 
 ## Contributing
 

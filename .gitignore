@@ -18,3 +18,5 @@
 .idea
 # Go Coverage report file.
 coverage.txt
+
+msc

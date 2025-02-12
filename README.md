@@ -6,11 +6,18 @@
 ![Go Version](https://img.shields.io/github/go-mod/go-version/nandlabs/golly-gcp?label=Go&color=00ADD8)
 [![godoc](https://godoc.org/oss.nandlabs.io/golly-gcp?status.svg)](https://pkg.go.dev/oss.nandlabs.io/golly-gcp)
 
-<!-- Brief Introduction of the project -->
+`golly-gcp` is a Go module that provides a set of utilities to interact with GCP services. This is an extension of [golly](https://github.com/nandlabs/golly).
 
 ## Installation
 
-TODO Document installation instructions
+```bash
+go get oss.nandlabs.io/golly-gcp
+```
+
+## Core Packages
+
+1. [storage](storage/README.md): A virtual filesystem for Cloud Storage
+2. [pubsub](pubsub/README.md): Messaging Implementation for PubSub
 
 ## Contributing
 

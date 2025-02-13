@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	fileScheme = "storage"
+	fileScheme = "gcs"
 )
 
 var fsSchemes = []string{fileScheme}

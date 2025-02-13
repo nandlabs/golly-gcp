@@ -10,10 +10,11 @@ import (
 )
 
 func GetClient(url *url.URL) (client *pubsub.Client, err error) {
+
 	gcpConfig := gcpsvc.Manager.Get(gcpsvc.ExtractKey(url))
 	if gcpConfig.ProjectId == textutils.EmptyStr {
 		gcpConfig = gcpsvc.Manager.Get("pubsub")
 	}
-	client, err = pubsub.NewClient(context.Background(), gcpConfig.ProjectId)
+	client, err = pubsub.NewClient(context.Background(), gcpConfig.ProjectId, gcpConfig.Options...)
 	return
 }

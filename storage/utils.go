@@ -64,19 +64,19 @@ func validateUrl(u *url.URL) (err error) {
 func (urlOpts *UrlOpts) CreateStorageClient() (client *storage.Client, err error) {
 	gcpConfig := gcpsvc.Manager.Get(gcpsvc.ExtractKey(urlOpts.u))
 	if gcpConfig.ProjectId == textutils.EmptyStr {
-		gcpConfig = gcpsvc.Manager.Get("storage")
+		gcpConfig = gcpsvc.Manager.Get("gcs")
 	}
-	client, err = storage.NewClient(context.Background())
+	client, err = storage.NewClient(context.Background(), gcpConfig.Options...)
 	return
 }
 
 func handleStoragePath(ctx context.Context, client *storage.Client, storageURL string) error {
 	// Validate and parse the URL
-	if !strings.HasPrefix(storageURL, "storage://") {
+	if !strings.HasPrefix(storageURL, "gcs://") {
 		return fmt.Errorf("invalid URL format, must start with 'storage://'")
 	}
 
-	path := strings.TrimPrefix(storageURL, "storage://")
+	path := strings.TrimPrefix(storageURL, "gcs://")
 	components := strings.Split(path, "/")
 
 	if len(components) < 1 {

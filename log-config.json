@@ -1,0 +1,16 @@
+{
+    "format": "text",
+    "async": true,
+    "defaultLvl": "INFO",
+    "includeFunction": true,
+    "includeLineNum": true,
+    "pkgConfigs": [],
+    "writers": [
+        {
+            "console": {
+                "errToStdOut": false,
+                "warnToStdOut": false
+            }
+        }
+    ]
+}

@@ -31,7 +31,7 @@ func (storageFile *StorageFile) Read(b []byte) (body int, err error) {
 	ctx := context.Background()
 	bucket := client.Bucket(parsedUrl.Bucket)
 	// TODO Object name comes from URL
-	object := bucket.Object("")
+	object := bucket.Object(parsedUrl.Key)
 	reader, err := object.NewReader(ctx)
 	storageFile.closers = append(storageFile.closers, reader)
 	if err != nil {
@@ -40,6 +40,9 @@ func (storageFile *StorageFile) Read(b []byte) (body int, err error) {
 	defer storageFile.Close()
 
 	body, err = reader.Read(b)
+	if err == io.EOF {
+		reader.Close()
+	}
 	if err != nil {
 		return
 	}
@@ -93,7 +96,7 @@ func (storageFile *StorageFile) ListAll() (files []vfs.VFile, err error) {
 			break
 		}
 		if err != nil {
-			logger.ErrorF("Bucket.Objects: %v", err)
+			logger.InfoF("Bucket.Objects: %v\n", err)
 			return nil, err
 		}
 		u, _ := url.Parse("https://storage.googleapis.com" + textutils.ForwardSlashStr + objAttrs.Bucket + textutils.ForwardSlashStr + objAttrs.Name)
@@ -115,8 +118,7 @@ func (storageFile *StorageFile) Info() (file vfs.VFileInfo, err error) {
 	}
 	ctx := context.Background()
 	bucket := client.Bucket(parsedUrl.Bucket)
-	// TODO Object name comes from URL
-	object := bucket.Object("")
+	object := bucket.Object(parsedUrl.Key)
 
 	attrs, err := object.Attrs(ctx)
 	if err != nil {
@@ -144,8 +146,7 @@ func (storageFile *StorageFile) AddProperty(name, value string) (err error) {
 	}
 	ctx := context.Background()
 	bucket := client.Bucket(parsedUrl.Bucket)
-	// TODO Object name comes from URL
-	object := bucket.Object("")
+	object := bucket.Object(parsedUrl.Key)
 
 	attrs, err := object.Attrs(ctx)
 	if err != nil {
@@ -180,8 +181,7 @@ func (storageFile *StorageFile) GetProperty(name string) (value string, err erro
 	}
 	ctx := context.Background()
 	bucket := client.Bucket(parsedUrl.Bucket)
-	// TODO Object name comes from URL
-	object := bucket.Object("")
+	object := bucket.Object(parsedUrl.Key)
 
 	attrs, err := object.Attrs(ctx)
 	if err != nil {
@@ -211,8 +211,7 @@ func (storageFile *StorageFile) Delete() (err error) {
 	}
 	ctx := context.Background()
 	bucket := client.Bucket(parsedUrl.Bucket)
-	// TODO Object name comes from URL
-	object := bucket.Object("")
+	object := bucket.Object(parsedUrl.Key)
 
 	if err = object.Delete(ctx); err != nil {
 		logger.ErrorF("object.Delete: %v", err)

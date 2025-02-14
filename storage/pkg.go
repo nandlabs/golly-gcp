@@ -10,6 +10,10 @@ var (
 )
 
 func init() {
-	storageFs := &StorageFS{}
+	storageFs := &StorageFS{
+		BaseVFS: &vfs.BaseVFS{
+			VFileSystem: &vfs.OsFs{},
+		},
+	}
 	vfs.GetManager().Register(storageFs)
 }

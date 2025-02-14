@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	fileScheme = "gcs"
+	fileScheme = "gs"
 )
 
 var fsSchemes = []string{fileScheme}
@@ -23,6 +23,8 @@ func (storageFs *StorageFS) Schemes() []string {
 	return fsSchemes
 }
 
+// TODO should not be allowed to create a bucket
+// should be able to create folders and files
 func (storageFs *StorageFS) Create(u *url.URL) (file vfs.VFile, err error) {
 	urlopts, err := parseUrl(u)
 	if err != nil {
@@ -32,9 +34,16 @@ func (storageFs *StorageFS) Create(u *url.URL) (file vfs.VFile, err error) {
 	if err != nil {
 		return
 	}
-	ctx := context.Background()
 
-	err = handleStoragePath(ctx, client, u.String())
+	bucket := client.Bucket(urlopts.Bucket)
+	object := bucket.Object(urlopts.Key + "/")
+
+	wc := object.NewWriter(context.Background())
+
+	if err = wc.Close(); err != nil {
+		logger.ErrorF("failed to close writer: %v", err)
+		return
+	}
 	return
 }
 
@@ -49,6 +58,8 @@ func (storageFs *StorageFS) MkdirAll(u *url.URL) (file vfs.VFile, err error) {
 }
 
 // Open location provided of the Storage Bucket
+// TODO what is the purpose of this function? what does it open?
+// Opening a single file?
 func (storageFs *StorageFS) Open(u *url.URL) (file vfs.VFile, err error) {
 	urlopts, err := parseUrl(u)
 	if err != nil {
@@ -61,11 +72,10 @@ func (storageFs *StorageFS) Open(u *url.URL) (file vfs.VFile, err error) {
 	ctx := context.Background()
 	bucket := client.Bucket(urlopts.Bucket)
 	// TODO Object name comes from URL
-	object := bucket.Object("")
-
+	object := bucket.Object(urlopts.Key)
 	rc, err := object.NewReader(ctx)
 	if err != nil {
-		logger.ErrorF("object.NewReader: %v", err)
+		logger.ErrorF("object.NewReader: %v\n", err)
 		return
 	}
 	defer rc.Close()

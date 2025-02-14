@@ -1,10 +1,8 @@
 package storage
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -20,103 +18,89 @@ type UrlOpts struct {
 	Key    string
 }
 
+func GetConfigFromStrUrl(u string) (gcpConfig gcpsvc.Config, err error) {
+	parsedUrl, err := url.Parse(u)
+	if err != nil {
+		return
+	}
+	return GetConfig(parsedUrl)
+}
+
+func GetConfig(u *url.URL) (gcpConfig gcpsvc.Config, err error) {
+	urlOpts, err := parseUrl(u)
+	if err != nil {
+		logger.ErrorF("error during parse url: %v", err)
+		return
+	}
+	gcpConfig = gcpsvc.Manager.Get(gcpsvc.ExtractKey(urlOpts.u))
+	if gcpConfig.ProjectId == textutils.EmptyStr {
+		gcpConfig = gcpsvc.Manager.Get("gs")
+	}
+	return
+}
+
 // Structure of URL will be
 // storage://bucketName/folderName.../fileName
 // there can be multiple folders
-
 func parseUrl(url *url.URL) (opts *UrlOpts, err error) {
 	err = validateUrl(url)
 	if err != nil {
 		return
 	}
 	host := url.Host
-	pathParams := strings.Split(url.Path, "/")
-	bucket := pathParams[0]
-	var b bytes.Buffer
-	for _, item := range pathParams[1:] {
-		b.WriteString("/")
-		b.WriteString(item)
-	}
-	key := b.String()
+
+	path := strings.TrimPrefix(url.String(), "gs://")
+	components := strings.Split(path, "/")
+
+	bucketName := components[0]
+	objectPath := strings.Join(components[1:], "/")
+
+	// TODO add a check if the object path is actually a file or a folder
+	// file should contain the extension and filder should contain / in the end
+
 	opts = &UrlOpts{
 		u:      url,
 		Host:   host,
-		Bucket: bucket,
-		Key:    key,
+		Bucket: bucketName,
+		Key:    objectPath,
 	}
 	return
 }
 
 func validateUrl(u *url.URL) (err error) {
-	pathsElements := strings.Split(u.Path, "/")
-	if len(pathsElements) == 1 {
-		// only bucket provided
-		return nil
-	} else if len(pathsElements) >= 2 {
-		// Bucket and object path provided
-		return nil
-	} else {
-		//return error as it's not a valid url with bucket missing
-		return errors.New("invalid url with bucket missing")
-	}
-}
-
-func (urlOpts *UrlOpts) CreateStorageClient() (client *storage.Client, err error) {
-	gcpConfig := gcpsvc.Manager.Get(gcpsvc.ExtractKey(urlOpts.u))
-	if gcpConfig.ProjectId == textutils.EmptyStr {
-		gcpConfig = gcpsvc.Manager.Get("gcs")
-	}
-	client, err = storage.NewClient(context.Background(), gcpConfig.Options...)
-	return
-}
-
-func handleStoragePath(ctx context.Context, client *storage.Client, storageURL string) error {
-	// Validate and parse the URL
-	if !strings.HasPrefix(storageURL, "gcs://") {
-		return fmt.Errorf("invalid URL format, must start with 'storage://'")
+	storageUrl := u.String()
+	if !strings.HasPrefix(storageUrl, "gs://") {
+		return errors.New("invalid URL format, must start with 'storage://'")
 	}
 
-	path := strings.TrimPrefix(storageURL, "gcs://")
+	path := strings.TrimPrefix(storageUrl, "gs://")
 	components := strings.Split(path, "/")
 
 	if len(components) < 1 {
-		return fmt.Errorf("invalid URL, must specify at least a bucket name")
+		return errors.New("invalid URL, must specify at least a bucket name")
 	}
 
 	// Extract bucket name and the "path" inside the bucket
-	bucketName := components[0]
 	objectPath := strings.Join(components[1:], "/")
 
 	// Determine if the last component is a bucket or file
 	if objectPath == "" {
 		// No object path provided, create an empty bucket
-		return createBucket(ctx, client, bucketName)
+		// do not allow to create a bucket
+		// throw error
+		logger.Error("cannot create a bucket. please use console for the same")
+		return errors.New("cannot create a bucket. please use console for the same")
 	}
-
-	// If objectPath is provided, treat it as a file to create
-	return createFile(ctx, client, bucketName, objectPath)
-}
-
-func createBucket(ctx context.Context, client *storage.Client, bucketName string) (err error) {
-	// create the bucket
-	err = client.Bucket(bucketName).Create(ctx, "project-id", nil)
-	if err != nil {
-		logger.ErrorF("failed to create bucket %q: %v", bucketName, err)
-		return
-	}
-	logger.InfoF("Bucket %q created successfully.", bucketName)
 	return
 }
 
-func createFile(ctx context.Context, client *storage.Client, bucketName string, objectName string) (err error) {
-	bucket := client.Bucket(bucketName)
-	object := bucket.Object(objectName)
-
-	wc := object.NewWriter(ctx)
-
-	if err = wc.Close(); err != nil {
-		logger.ErrorF("failed to close writer: %v", err)
-		return
+func (urlOpts *UrlOpts) CreateStorageClient() (client *storage.Client, err error) {
+	gcpConfig := gcpsvc.Manager.Get(gcpsvc.ExtractKey(urlOpts.u))
+	if gcpConfig.ProjectId == textutils.EmptyStr {
+		gcpConfig = gcpsvc.Manager.Get("gs")
 	}
+	// make it 3 step verification check
+	// check for url.host, gs, if none is present then set default conifg
+	client, err = storage.NewClient(context.Background(), gcpConfig.Options...)
 	return
 }

@@ -19,4 +19,5 @@
 # Go Coverage report file.
 coverage.txt
 
-msc
+msc-storage
+msc-pubsub

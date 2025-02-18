@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -91,18 +92,46 @@ func (p *ProviderPubSub) Receive(source *url.URL, options ...messaging.Option) (
 	if err != nil {
 		return
 	}
-	ctx := context.Background()
 	subscription := client.Subscription(source.Host)
-	err = subscription.Receive(ctx, func(context context.Context, message *pubsub.Message) {
-		logger.InfoF("Received message: %s\n", string(message.Data))
-		// Acknowledge the message
-		message.Ack()
-	})
-	if err != nil {
-		logger.ErrorF("failed to receive message: %w", err)
-		return
+
+	optionResolver := messaging.NewOptionsResolver(options...)
+	timeoutVal, has := optionResolver.Get("Timeout")
+	if !has {
+		return nil, errors.New("please provide timeout of the messages to consume")
 	}
-	return
+	timeout := timeoutVal.(int)
+	timeoutDuration := time.Duration(timeout) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
+
+	// channel to capture the message
+	messageChan := make(chan string, 1)
+	errChan := make(chan error, 1)
+
+	go func() {
+		err := subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
+			logger.InfoF("Received message: %s\n", string(msg.Data))
+			messageChan <- string(msg.Data)
+			msg.Ack()
+			cancel()
+		})
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case message := <-messageChan:
+		baseMsg, _ := messaging.NewBaseMessage()
+		baseMsg.SetBodyStr(string(message))
+		msg = &MessagePubSub{
+			BaseMessage: baseMsg,
+		}
+		return msg, nil
+	case err := <-errChan:
+		return nil, err
+	case <-ctx.Done():
+		return nil, errors.New("no messages found")
+	}
 }
 
 // URL structure - pubsub://subscription-id
@@ -111,42 +140,71 @@ func (p *ProviderPubSub) ReceiveBatch(source *url.URL, options ...messaging.Opti
 	if err != nil {
 		return
 	}
-	ctx := context.Background()
 	subscription := client.Subscription(source.Host)
 
-	// TODO How to consume multiple messages
-	err = subscription.Receive(ctx, func(context context.Context, message *pubsub.Message) {
-		logger.InfoF("recieved %q", message.Data)
-		message.Ack()
+	fmt.Println(options)
+	optionResolver := messaging.NewOptionsResolver(options...)
+	batchSizeVal, has := optionResolver.Get("BatchSize")
+	if !has {
+		// handle if the batchsize is not passed
+		// do we throw an error?
+		return nil, errors.New("please provide batchsize of the messages to consume")
+	}
+
+	batchSize := batchSizeVal.(int)
+	timeoutVal, has := optionResolver.Get("Timeout")
+	if !has {
+		return nil, errors.New("please provide timeout of the messages to consume")
+	}
+	timeout := timeoutVal.(int)
+	timeoutDuration := time.Duration(timeout) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
+
+	err = subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
+		baseMsg, _ := messaging.NewBaseMessage()
+		baseMsg.SetBodyStr(string(msg.Data))
+		receivedMessage := &MessagePubSub{
+			BaseMessage: baseMsg,
+		}
+		msgs = append(msgs, receivedMessage)
+
+		msg.Ack()
+
+		if len(msgs) >= batchSize {
+			cancel()
+		}
 	})
 	if err != nil {
-		logger.ErrorF("error during recieved: %v", err)
+		return nil, err
+	}
+	if len(msgs) == 0 {
+		return nil, errors.New("no messages found")
 	}
 	return
 }
 
-func (p *ProviderPubSub) AddListener(url *url.URL, listener func(msg messaging.Message), options ...messaging.Option) (err error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func (p *ProviderPubSub) AddListener(u *url.URL, listener func(msg messaging.Message), options ...messaging.Option) (err error) {
+	ctx := context.Background()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			msgs, err := p.ReceiveBatch(url, options...)
-			if err != nil {
-				return fmt.Errorf("failed to receive messages: %w", err)
-			}
-			for _, msg := range msgs {
-				listener(msg)
-			}
-
-			if len(msgs) == 0 {
-				time.Sleep(1 * time.Second)
-			}
-		}
+	client, err := GetClient(u)
+	if err != nil {
+		return
 	}
+	subscription := client.Subscription(u.Host)
+	logger.Info("Starting listener for messages..")
+	err = subscription.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
+		baseMsg, _ := messaging.NewBaseMessage()
+		baseMsg.SetBodyStr(string(msg.Data))
+		receivedMessage := &MessagePubSub{
+			BaseMessage: baseMsg,
+		}
+		listener(receivedMessage)
+		msg.Ack()
+	})
+	if err != nil {
+		return
+	}
+	return
 }
 
 func (sqsp *ProviderPubSub) Close() (err error) {

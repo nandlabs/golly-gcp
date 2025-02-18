@@ -48,9 +48,11 @@ import (
 )
 
 func init() {
+    credentialsPath := "{enter the path of the credentials}"
     config := gcpsvc.Config{
         ProjectId: "project-id",
     }
+    config.Options = config.SetCredentialFile(credentialsPath)
     gcpsvc.Manager.Register("pubsub", config)
 }
 ```

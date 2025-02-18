@@ -39,7 +39,7 @@ Storage File System features such as
 
 ## Usage
 
-Setup the SQS library in order to start using it.
+Setup the storage library in order to start using it.
 Under you main pacakge, you can add an init function or any method of your choice to initiate the library
 
 The Priority of the Registered Provider is as follows
@@ -58,10 +58,12 @@ import (
 )
 
 func init() {
+    credentialsPath := "{enter the path of the credentials}"
     config := gcpsvc.Config{
         ProjectId: "project-id",
     }
-    gcpsvc.Manager.Register("storage", config)
+    config.Options = config.SetCredentialFile(credentialsPath)
+    gcpsvc.Manager.Register("gs", config)
 }
 ```
 

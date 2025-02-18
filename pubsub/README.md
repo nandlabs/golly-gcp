@@ -146,7 +146,10 @@ pubsub://subscription-id
         if err != nil {
             fmt.Println(err)
         }
-        msg, err := manager.Receive(u)
+        optionsBuilder := messaging.NewOptionsBuilder()
+        optionsBuilder.Add("Timeout", 10)
+        options := optionsBuilder.Build()
+        msg, err := manager.Receive(u, options...)
         if err != nil {
             // handle error
         }
@@ -171,7 +174,12 @@ pubsub://subscription-id
         if err != nil {
             fmt.Println(err)
         }
-        msgs, err := manager.ReceiveBatch(u)
+        optionsBuilder := messaging.NewOptionsBuilder()
+        optionsBuilder.Add("BatchSize", 5)
+        optionsBuilder.Add("Timeout", 10)
+
+        options := optionsBuilder.Build()
+        msgs, err := manager.ReceiveBatch(u, options...)
         if err != nil {
             // handle error
         }

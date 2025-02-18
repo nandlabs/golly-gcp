@@ -34,7 +34,7 @@ Storage File features such as
 
 Storage File System features such as
 
-- Create a file, folder or a bucket
+- Create a file or a folder
 - Open a file in a given location
 
 ## Usage
@@ -45,7 +45,7 @@ Under you main pacakge, you can add an init function or any method of your choic
 The Priority of the Registered Provider is as follows
 
 ```bash
-URL > HOST > Scheme("storage") > default
+URL > HOST > Scheme("gs") > default
 ```
 
 ```go
@@ -73,7 +73,7 @@ storage://bucketName/folderName.../fileName
 
 ## Examples
 
-1. Create a bucket/file
+1. Create a file
 
     ```go
     package main
@@ -85,7 +85,7 @@ storage://bucketName/folderName.../fileName
    
     func main() {
         manager := vfs.GetManager()
-        u, err := url.Parse("storage://bucketName")
+        u, err := url.Parse("gs://bucketName")
         if err != nil {
             // handle error
         }
@@ -98,14 +98,206 @@ storage://bucketName/folderName.../fileName
     }
     ```
 
-2. Read a file
-3. Delete a file
-4. Write a file
-5. List all the files in the bucket
-6. Get File Info of an object
-7. Get metadata of an object
-8. Add metadata to an object
+2. Create a folder
+
+    ```go
+    package main
+
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs" 
+    )
+
+    func main() {
+        manager := vfs.GetManager()
+        fmt.Printf("%v\n", manager)
+        u, err := url.Parse("gs://{bucket_name}/folder_1/")
+        fmt.Println(u)
+        if err != nil {
+            // handle error
+            fmt.Println(err)
+            return
+        }
+        resp, err := manager.Create(u)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        fmt.Println(resp)
+    }
+    ```
+
+3. Read a file
+
+    ```go
+    package main
+
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs" 
+    )
+
+    func main() {
+        manager := vfs.GetManager()
+        u, err := url.Parse("gs://{bucket_name}/folder_1/gopher-image.png")
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        file, err := manager.Open(u)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        buffer := make([]byte, 1024)
+        n, err := file.Read(buffer)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        fmt.Println(n)
+    }
+    ```
+
+4. Delete a file
+
+    ```go
+    package main
+
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs" 
+    )
+
+    func main() {
+        manager := vfs.GetManager()
+        // folder1 - was a file
+        u, err := url.Parse("gs://golly-test-app/folder1")
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        file, err := manager.Open(u)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        err = file.Delete()
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+    }
+    ```
+
+5. Write a file
+
+    ```go
+    package main
+
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs" 
+    )
+
+    func main() {
+        
+    }
+    ```
+
+6. List all the files in the bucket
+7. Get File Info of an object
+
+    ```go
+    package main
+
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs" 
+    )
+
+    func main() {
+        manager := vfs.GetManager()
+        u, err := url.Parse("gs://{bucket_name}/folder_1/gopher-image.png")
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        file, err := manager.Open(u)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        info, err := file.Info()
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        fmt.Println(info)
+    }
+    ```
+
+8. Get metadata of an object
+
+    ```go
+    package main
+
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs" 
+    )
+
+    func main() {
+        manager := vfs.GetManager()
+        u, err := url.Parse("gs://{bucket_name}/folder_1/gopher-image.png")
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        file, err := manager.Open(u)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        val, err := file.GetProperty("unique-code")
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        fmt.Printf("property value:: %v\n", val)
+    }
+    ```
+
+9. Add metadata to an object
+
+    ```go
+    package main
+
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs" 
+    )
+
+    func main() {
+        manager := vfs.GetManager()
+        u, err := url.Parse("gs://{bucket_name}/folder_1/gopher-image.png")
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        file, err := manager.Open(u)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        err = file.AddProperty("unique-code", "golly-image")
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+    }
+    ```
 
 ## Contributing
 
-We welcome contributions to the SQS library! If you find a bug, have a feature request, or want to contribute improvements, please create a pull request. For major changes, please open an issue first to discuss the changes you would like to make.
+We welcome contributions to the Storage library! If you find a bug, have a feature request, or want to contribute improvements, please create a pull request. For major changes, please open an issue first to discuss the changes you would like to make.

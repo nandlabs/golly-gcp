@@ -1,4 +1,4 @@
-package storage
+package gs
 
 import (
 	"oss.nandlabs.io/golly/l3"
@@ -11,9 +11,7 @@ var (
 
 func init() {
 	storageFs := &StorageFS{
-		BaseVFS: &vfs.BaseVFS{
-			VFileSystem: &vfs.OsFs{},
-		},
+		BaseVFS: &vfs.BaseVFS{VFileSystem: &StorageFS{}},
 	}
 	vfs.GetManager().Register(storageFs)
 }

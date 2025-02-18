@@ -21,3 +21,7 @@ coverage.txt
 
 msc-storage
 msc-pubsub
+
+.tmp
+main.go
+log-config.json

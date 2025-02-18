@@ -1,8 +1,6 @@
-package storage
+package gs
 
 import (
-	"context"
-	"errors"
 	"io"
 	"net/url"
 
@@ -36,30 +34,45 @@ func (storageFs *StorageFS) Create(u *url.URL) (file vfs.VFile, err error) {
 	}
 
 	bucket := client.Bucket(urlopts.Bucket)
-	object := bucket.Object(urlopts.Key + "/")
-
-	wc := object.NewWriter(context.Background())
-
-	if err = wc.Close(); err != nil {
-		logger.ErrorF("failed to close writer: %v", err)
-		return
+	object := bucket.Object(urlopts.Key)
+	file = &StorageFile{
+		bucket:     bucket,
+		fs:         storageFs,
+		storageObj: object,
+		urlOpts:    urlopts,
+		closers:    make([]io.Closer, 0),
 	}
 	return
 }
 
 func (storageFs *StorageFS) Mkdir(u *url.URL) (file vfs.VFile, err error) {
-	err = errors.New("operation Mkdir not supported")
-	return
+
+	return storageFs.MkdirAll(u)
 }
 
 func (storageFs *StorageFS) MkdirAll(u *url.URL) (file vfs.VFile, err error) {
-	err = errors.New("operation MkdirAll not supported")
+	urlopts, err := parseUrl(u)
+	if err != nil {
+		return
+	}
+	client, err := urlopts.CreateStorageClient()
+	if err != nil {
+		return
+	}
+
+	bucket := client.Bucket(urlopts.Bucket)
+	object := bucket.Object(urlopts.Key + "/")
+	file = &StorageFile{
+		bucket:     bucket,
+		fs:         storageFs,
+		storageObj: object,
+		urlOpts:    urlopts,
+		closers:    make([]io.Closer, 0),
+	}
 	return
 }
 
 // Open location provided of the Storage Bucket
-// TODO what is the purpose of this function? what does it open?
-// Opening a single file?
 func (storageFs *StorageFS) Open(u *url.URL) (file vfs.VFile, err error) {
 	urlopts, err := parseUrl(u)
 	if err != nil {
@@ -69,21 +82,15 @@ func (storageFs *StorageFS) Open(u *url.URL) (file vfs.VFile, err error) {
 	if err != nil {
 		return
 	}
-	ctx := context.Background()
 	bucket := client.Bucket(urlopts.Bucket)
-	// TODO Object name comes from URL
 	object := bucket.Object(urlopts.Key)
-	rc, err := object.NewReader(ctx)
-	if err != nil {
-		logger.ErrorF("object.NewReader: %v\n", err)
-		return
-	}
-	defer rc.Close()
-	_, err = io.ReadAll(rc)
-	// TODO :: what is the expectation of this function
+
 	file = &StorageFile{
-		Location: u,
-		fs:       storageFs,
+		bucket:     bucket,
+		fs:         storageFs,
+		storageObj: object,
+		urlOpts:    urlopts,
+		closers:    make([]io.Closer, 0),
 	}
 	return
 }

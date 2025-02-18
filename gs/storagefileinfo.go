@@ -1,14 +1,19 @@
-package storage
+package gs
 
 import (
+	"fmt"
 	"os"
 	"time"
+
+	"oss.nandlabs.io/golly/vfs"
 )
 
 type StorageFileInfo struct {
+	fs           vfs.VFileSystem
+	isDir        bool
 	key          string
-	size         int64
 	lastModified time.Time
+	size         int64
 }
 
 func (f *StorageFileInfo) Name() string {
@@ -30,10 +35,15 @@ func (f *StorageFileInfo) ModTime() time.Time {
 
 func (f *StorageFileInfo) IsDir() bool {
 	// Not applicable for GCP Storage objects, return default value
-	return false
+	return f.isDir
 }
 
 func (f *StorageFileInfo) Sys() interface{} {
 	// Not applicable for GCP Storage objects, return default value
-	return nil
+	return f.fs
+}
+
+// String returns a string representation of the file info.
+func (f *StorageFileInfo) String() string {
+	return fmt.Sprintf("StorageFileInfo{Name: %s, Size: %d, ModTime: %v, IsDir: %t}", f.key, f.size, f.lastModified, f.isDir)
 }

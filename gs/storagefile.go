@@ -152,6 +152,7 @@ func (storageFile *StorageFile) Url() *url.URL {
 func (storageFile *StorageFile) Delete() (err error) {
 
 	ctx := context.Background()
+
 	err = storageFile.storageObj.Delete(ctx)
 	return
 }

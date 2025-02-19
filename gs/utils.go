@@ -79,18 +79,6 @@ func validateUrl(u *url.URL) (err error) {
 	if len(components) < 1 {
 		return errors.New("invalid URL, must specify at least a bucket name")
 	}
-
-	// Extract bucket name and the "path" inside the bucket
-	objectPath := strings.Join(components[1:], "/")
-
-	// Determine if the last component is a bucket or file
-	if objectPath == "" {
-		// No object path provided, create an empty bucket
-		// do not allow to create a bucket
-		// throw error
-		logger.Error("cannot create a bucket. please use console for the same")
-		return errors.New("cannot create a bucket. please use console for the same")
-	}
 	return
 }
 

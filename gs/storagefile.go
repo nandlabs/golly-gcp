@@ -43,9 +43,9 @@ func (storageFile *StorageFile) Write(b []byte) (numBytes int, err error) {
 
 func (storageFile *StorageFile) ListAll() (files []vfs.VFile, err error) {
 	ctx := context.Background()
-	logger.InfoF("Listing all objects in bucket %q using ListAll for path %s", storageFile.bucket, storageFile.urlOpts.u.Path)
+	logger.InfoF("Listing all objects in bucket %q using ListAll for path %s", storageFile.bucket.BucketName(), storageFile.urlOpts.u.Path)
 	it := storageFile.bucket.Objects(ctx, &storage.Query{
-		Prefix: storageFile.urlOpts.u.Path[1:],
+		Prefix: storageFile.urlOpts.Key,
 	})
 	for {
 		var vFile vfs.VFile
@@ -64,7 +64,7 @@ func (storageFile *StorageFile) ListAll() (files []vfs.VFile, err error) {
 		} else {
 			subPath = attrs.Prefix
 		}
-		if subPath == storageFile.urlOpts.u.Path[1:]+textutils.ForwardSlashStr || subPath == storageFile.urlOpts.u.Path[1:] {
+		if storageFile.urlOpts.Key != "" && (subPath == storageFile.urlOpts.Key+textutils.ForwardSlashStr || subPath == storageFile.urlOpts.Key) {
 			continue
 		}
 		u := &url.URL{

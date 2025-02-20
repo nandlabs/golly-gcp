@@ -1,16 +1,23 @@
+# golly-gcp
+
 [![testing](https://img.shields.io/github/actions/workflow/status/nandlabs/golly-gcp/go_ci.yml?branch=main&event=push&color=228B22)](https://github.com/nandlabs/golly-gcp/actions?query=event%3Apush+branch%3Amain+)
 [![release](https://img.shields.io/github/v/release/nandlabs/golly-gcp?label=Latest&color=228B22)](https://github.com/nandlabs/golly-gcp/releases/latest)
 [![releaseDate](https://img.shields.io/github/release-date/nandlabs/golly-gcp?label=Released&color=228B22)](https://github.com/nandlabs/golly-gcp/releases/latest)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/nandlabs/golly-gcp?label=Go&color=00ADD8)
 [![godoc](https://godoc.org/oss.nandlabs.io/golly-gcp?status.svg)](https://pkg.go.dev/oss.nandlabs.io/golly-gcp)
 
-# golly-gcp
-
-<!-- Brief Introduction of the project -->
+`golly-gcp` is a Go module that provides a set of utilities to interact with GCP services. This is an extension of [golly](https://github.com/nandlabs/golly).
 
 ## Installation
 
-TODO Document installation instructions
+```bash
+go get oss.nandlabs.io/golly-gcp
+```
+
+## Core Packages
+
+1. [storage](storage/README.md): A virtual filesystem for Cloud Storage
+2. [pubsub](pubsub/README.md): Messaging Implementation for PubSub
 
 ## Contributing
 

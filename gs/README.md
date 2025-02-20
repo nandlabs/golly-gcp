@@ -208,7 +208,37 @@ gs://bucketName/folderName.../fileName
    }
    ```
 
-6. List all the files in the bucket
+6. List all the files in a bucket
+
+    ```go
+    package main
+
+    import (
+        _ "oss.nandlabs.io/golly-gcp/storage"
+        "oss.nandlabs.io/golly/vfs"
+    )
+
+    func main() {
+        manager := vfs.GetManager()
+        u, err := url.Parse("gs://{bucket_name}")
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        file, err := manager.Open(u)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        files, err := file.ListAll()
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
+        fmt.Print(files)
+    }
+    ```
+
 7. Get File Info of an object
 
    ```go

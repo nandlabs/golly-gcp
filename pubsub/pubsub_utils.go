@@ -11,7 +11,7 @@ import (
 
 func GetClient(url *url.URL) (client *pubsub.Client, err error) {
 
-	gcpConfig := gcpsvc.Manager.Get(gcpsvc.ExtractKey(url))
+	gcpConfig := gcpsvc.GetConfig(url, PubSubScheme)
 	if gcpConfig.ProjectId == textutils.EmptyStr {
 		gcpConfig = gcpsvc.Manager.Get("pubsub")
 	}

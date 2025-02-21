@@ -16,8 +16,9 @@ go get oss.nandlabs.io/golly-gcp
 
 ## Core Packages
 
-1. [storage](storage/README.md): A virtual filesystem for Cloud Storage
-2. [pubsub](pubsub/README.md): Messaging Implementation for PubSub
+1. [storage](storage/README.md): Golly VFS implementation for Google Cloud Storage
+2. [pubsub](pubsub/README.md): Golly Messaging Implementation for PubSub
+3. [vertex](vertex/README.md): Golly GenAI Provider for Vertex AI
 
 ## Contributing
 

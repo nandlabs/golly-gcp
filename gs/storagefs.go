@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	fileScheme = "gs"
+	GsFileScheme = "gs"
 )
 
-var fsSchemes = []string{fileScheme}
+var fsSchemes = []string{GsFileScheme}
 
 type StorageFS struct {
 	*vfs.BaseVFS

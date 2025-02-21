@@ -8,7 +8,7 @@ import (
 type Config struct {
 	Options   []option.ClientOption
 	ProjectId string
-	Region    string
+	Location  string
 }
 
 func (c *Config) SetProjectId(projectId string) {
@@ -16,7 +16,7 @@ func (c *Config) SetProjectId(projectId string) {
 }
 
 func (c *Config) SetRegion(region string) {
-	c.Region = region
+	c.Location = region
 }
 
 func (c *Config) SetCredentialFile(filePath string) []option.ClientOption {
@@ -74,4 +74,4 @@ func (c *Config) AddOption(opt option.ClientOption) {
 	c.Options = append(c.Options, opt)
 }
 
-var Manager = managers.NewItemManager[Config]()
+var Manager = managers.NewItemManager[*Config]()

@@ -8,7 +8,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"oss.nandlabs.io/golly-gcp/gcpsvc"
-	"oss.nandlabs.io/golly/textutils"
 )
 
 type UrlOpts struct {
@@ -16,27 +15,6 @@ type UrlOpts struct {
 	Host   string
 	Bucket string
 	Key    string
-}
-
-func GetConfigFromStrUrl(u string) (gcpConfig gcpsvc.Config, err error) {
-	parsedUrl, err := url.Parse(u)
-	if err != nil {
-		return
-	}
-	return GetConfig(parsedUrl)
-}
-
-func GetConfig(u *url.URL) (gcpConfig gcpsvc.Config, err error) {
-	urlOpts, err := parseUrl(u)
-	if err != nil {
-		logger.ErrorF("error during parse url: %v", err)
-		return
-	}
-	gcpConfig = gcpsvc.Manager.Get(gcpsvc.ExtractKey(urlOpts.u))
-	if gcpConfig.ProjectId == textutils.EmptyStr {
-		gcpConfig = gcpsvc.Manager.Get("gs")
-	}
-	return
 }
 
 // Structure of URL will be
@@ -83,10 +61,8 @@ func validateUrl(u *url.URL) (err error) {
 }
 
 func (urlOpts *UrlOpts) CreateStorageClient() (client *storage.Client, err error) {
-	gcpConfig := gcpsvc.Manager.Get(gcpsvc.ExtractKey(urlOpts.u))
-	if gcpConfig.ProjectId == textutils.EmptyStr {
-		gcpConfig = gcpsvc.Manager.Get("gs")
-	}
+	gcpConfig := gcpsvc.GetConfig(urlOpts.u, GsFileScheme)
+
 	// make it 3 step verification check
 	// check for url.host, gs, if none is present then set default conifg
 	client, err = storage.NewClient(context.Background(), gcpConfig.Options...)

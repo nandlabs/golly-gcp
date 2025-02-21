@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	SchemesPubSub  = "pubsub"
+	PubSubScheme   = "pubsub"
 	PubSubProvider = "pubsub-provider"
 )
 
-var pubsubSchemes = []string{SchemesPubSub}
+var pubsubSchemes = []string{PubSubScheme}
 
 type ProviderPubSub struct{}
 

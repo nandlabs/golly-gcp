@@ -6,13 +6,28 @@ import (
 	"oss.nandlabs.io/golly/textutils"
 )
 
-func ExtractKey(url *url.URL) (key string) {
+func GetConfig(url *url.URL, name string) (config *Config) {
+	key := ""
+
+	if url == nil {
+		config = Manager.Get(name)
+		return
+	}
 	if url.Host != "" {
-		key = key + url.Host
+		key = url.Host
 	}
 
-	if url.Path != "" {
-		key = key + textutils.ForwardSlashStr + url.Path
+	config = Manager.Get(key)
+	if config == nil {
+		if url.Path != "" {
+			key = key + textutils.ForwardSlashStr + url.Path
+		}
+		config = Manager.Get(key)
+
+	}
+
+	if config == nil {
+		config = Manager.Get(name)
 	}
 
 	return

@@ -131,7 +131,7 @@ func main(){
 
 ## Key Functionalities
 
-- **VertexAiProvider**: Implements the `genai.Provider` interface.
+- **VertexAiProvider**: Implements the `oss.nandlabs.io/golly/genai.Provider` interface.
 - **Generate**: Generates content using a specified model and exchange options.
 - **GenerateStream**: Generates a stream of content and handles streaming responses.
 - **Models**: Returns the models of the provider ( unsupported for Vertex AI).

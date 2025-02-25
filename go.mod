@@ -1,6 +1,7 @@
 module oss.nandlabs.io/golly-gcp
 
-go 1.22.7
+go 1.23.0
+
 toolchain go1.23.4
 
 require (
@@ -8,7 +9,7 @@ require (
 	cloud.google.com/go/storage v1.50.0
 	cloud.google.com/go/vertexai v0.13.3
 	google.golang.org/api v0.222.0
-	oss.nandlabs.io/golly v1.2.5
+	oss.nandlabs.io/golly v1.2.7
 )
 
 require (

@@ -388,5 +388,11 @@ func (p *VertexAiProvider) setOptions(model *vertexgenai.GenerativeModel, option
 		model.SetCandidateCount(int32(options.GetCandidateCount(VertexAIDefaultCandidateCount)))
 	}
 
+	if options.Has(genai.OptionSchema) && options.Has(genai.OptionOutputMime) {
+		model.GenerationConfig.ResponseMIMEType = options.GetOutputMime(ioutils.MimeApplicationJSON)
+		model.GenerationConfig.ResponseSchema = ToVertexSchema(options.GetSchema())
+
+	}
+
 	return
 }

@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/storage v1.50.0
 	cloud.google.com/go/vertexai v0.13.3
 	google.golang.org/api v0.222.0
-	oss.nandlabs.io/golly v1.2.5
+	oss.nandlabs.io/golly v1.2.7
 )
 
 require (

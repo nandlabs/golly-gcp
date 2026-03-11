@@ -5,20 +5,24 @@ import (
 	"oss.nandlabs.io/golly/managers"
 )
 
+// Config holds GCP client options and project/location info.
 type Config struct {
 	Options   []option.ClientOption
 	ProjectId string
 	Location  string
 }
 
+// SetProjectId sets the GCP project ID.
 func (c *Config) SetProjectId(projectId string) {
 	c.ProjectId = projectId
 }
 
+// SetRegion sets the GCP region/location.
 func (c *Config) SetRegion(region string) {
 	c.Location = region
 }
 
+// SetCredentialFile adds a credentials file option and returns the updated options.
 func (c *Config) SetCredentialFile(filePath string) []option.ClientOption {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
@@ -27,6 +31,7 @@ func (c *Config) SetCredentialFile(filePath string) []option.ClientOption {
 	return c.Options
 }
 
+// SetCredentialJSON adds a credentials JSON option and returns the updated options.
 func (c *Config) SetCredentialJSON(json []byte) []option.ClientOption {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
@@ -35,6 +40,7 @@ func (c *Config) SetCredentialJSON(json []byte) []option.ClientOption {
 	return c.Options
 }
 
+// SetEndpoint adds an endpoint option and returns the updated options.
 func (c *Config) SetEndpoint(endpoint string) []option.ClientOption {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
@@ -43,6 +49,7 @@ func (c *Config) SetEndpoint(endpoint string) []option.ClientOption {
 	return c.Options
 }
 
+// SetUserAgent adds a user agent option and returns the updated options.
 func (c *Config) SetUserAgent(userAgent string) []option.ClientOption {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
@@ -51,6 +58,7 @@ func (c *Config) SetUserAgent(userAgent string) []option.ClientOption {
 	return c.Options
 }
 
+// SetQuotaProject adds a quota project option and returns the updated options.
 func (c *Config) SetQuotaProject(quotaProject string) []option.ClientOption {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
@@ -59,6 +67,7 @@ func (c *Config) SetQuotaProject(quotaProject string) []option.ClientOption {
 	return c.Options
 }
 
+// SetScopes adds scopes options and returns the updated options.
 func (c *Config) SetScopes(scopes ...string) []option.ClientOption {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
@@ -67,6 +76,7 @@ func (c *Config) SetScopes(scopes ...string) []option.ClientOption {
 	return c.Options
 }
 
+// AddOption appends a custom client option to the options slice.
 func (c *Config) AddOption(opt option.ClientOption) {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
@@ -74,4 +84,5 @@ func (c *Config) AddOption(opt option.ClientOption) {
 	c.Options = append(c.Options, opt)
 }
 
+// Manager is an item manager for Config instances.
 var Manager = managers.NewItemManager[*Config]()

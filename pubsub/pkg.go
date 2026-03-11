@@ -5,12 +5,10 @@ import (
 	"oss.nandlabs.io/golly/messaging"
 )
 
-var (
-	logger = l3.Get()
-)
+var logger = l3.Get()
 
 func init() {
-	providerPubSub := &ProviderPubSub{}
+	provider := &Provider{}
 	messagingManager := messaging.GetManager()
-	messagingManager.Register(providerPubSub)
+	messagingManager.Register(provider)
 }

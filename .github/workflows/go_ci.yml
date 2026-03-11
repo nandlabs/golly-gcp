@@ -1,4 +1,4 @@
-name: "Build & Test"
+name: "CI"
 
 on:
   pull_request:
@@ -6,20 +6,11 @@ on:
       - "*"
   push:
     branches:
-      - "main"    
+      - "main"
 
 jobs:
-  build:
-    name: "Build & Test"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup Go 1.x
-        uses: actions/setup-go@v4
-        with:
-          go-version: ^1.2
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
-      - name: Clean and Build
-        run: make clean build
-      - name: Test Coverage
-        run: make test-cover
+  ci:
+    uses: nandlabs/oss-workflows/.github/workflows/go-ci.yml@main
+    with:
+      go-versions: '["1.25", "1.26"]'
+      coverage-go-version: "1.25"

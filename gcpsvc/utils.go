@@ -6,24 +6,26 @@ import (
 	"oss.nandlabs.io/golly/textutils"
 )
 
-func GetConfig(url *url.URL, name string) (config *Config) {
-	key := ""
-
-	if url == nil {
+// GetConfig resolves a Config for the given URL using a 3-step resolution:
+// 1. Try url.Host
+// 2. Try url.Host + "/" + url.Path
+// 3. Fallback to the service name
+// Returns nil if no config is registered.
+func GetConfig(u *url.URL, name string) (config *Config) {
+	if u == nil {
 		config = Manager.Get(name)
 		return
 	}
-	if url.Host != "" {
-		key = url.Host
+
+	key := ""
+	if u.Host != "" {
+		key = u.Host
 	}
 
 	config = Manager.Get(key)
-	if config == nil {
-		if url.Path != "" {
-			key = key + textutils.ForwardSlashStr + url.Path
-		}
+	if config == nil && u.Path != "" {
+		key = key + textutils.ForwardSlashStr + u.Path
 		config = Manager.Get(key)
-
 	}
 
 	if config == nil {

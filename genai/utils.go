@@ -69,7 +69,7 @@ func convertMessage(msg *gollygenai.Message) *googlegenai.Content {
 func convertPart(part *gollygenai.Part) *googlegenai.Part {
 	switch {
 	case part.Text != nil:
-		return googlegenai.NewPartFromText(part.Text.Text)
+		return googlegenai.NewPartFromText(part.Text.Content)
 	case part.File != nil:
 		return googlegenai.NewPartFromURI(part.File.URI, part.MimeType)
 	case part.Bin != nil:
@@ -231,7 +231,7 @@ func convertFromGooglePart(part *googlegenai.Part) *gollygenai.Part {
 	// Thinking/reasoning parts (Thought=true with text content)
 	if part.Thought && part.Text != "" {
 		return &gollygenai.Part{
-			Text: &gollygenai.TextPart{Text: part.Text},
+			Text: &gollygenai.TextPart{Content: part.Text},
 			Attributes: map[string]interface{}{
 				"thought": true,
 			},
@@ -241,7 +241,7 @@ func convertFromGooglePart(part *googlegenai.Part) *gollygenai.Part {
 	switch {
 	case part.Text != "":
 		return &gollygenai.Part{
-			Text: &gollygenai.TextPart{Text: part.Text},
+			Text: &gollygenai.TextPart{Content: part.Text},
 		}
 	case part.InlineData != nil:
 		return &gollygenai.Part{

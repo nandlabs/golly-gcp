@@ -156,7 +156,7 @@ cfg := &gcpsvc.Config{
     ProjectId: "my-project",
     Location:  "us-central1",
 }
-cfg.SetCredentialFile("/path/to/credentials.json")
+cfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/credentials.json")
 gcpsvc.Manager.Register("gs", cfg)
 ```
 
@@ -217,17 +217,17 @@ storage.NewClient(ctx) // uses Application Default Credentials
 
 `gcpsvc.Config` supports the following fields and setters:
 
-| Field / Setter                   | Description                                 |
-| -------------------------------- | ------------------------------------------- |
-| `ProjectId` / `SetProjectId(id)` | GCP project ID                              |
-| `Location` / `SetRegion(region)` | GCP region/location (e.g., `"us-central1"`) |
-| `SetCredentialFile(path)`        | Service account JSON key file               |
-| `SetCredentialJSON(json)`        | Service account JSON key as byte slice      |
-| `SetEndpoint(url)`               | Custom endpoint URL (for emulators, etc.)   |
-| `SetUserAgent(ua)`               | Custom user agent string                    |
-| `SetQuotaProject(project)`       | Quota project for billing                   |
-| `SetScopes(scopes...)`           | OAuth2 scopes                               |
-| `AddOption(opt)`                 | Append any custom `option.ClientOption`     |
+| Field / Setter                          | Description                                 |
+| --------------------------------------- | ------------------------------------------- |
+| `ProjectId` / `SetProjectId(id)`        | GCP project ID                              |
+| `Location` / `SetRegion(region)`        | GCP region/location (e.g., `"us-central1"`) |
+| `SetAuthCredentialFile(credType, path)` | Service account JSON key file               |
+| `SetAuthCredentialJSON(credType, json)` | Service account JSON key as byte slice      |
+| `SetEndpoint(url)`                      | Custom endpoint URL (for emulators, etc.)   |
+| `SetUserAgent(ua)`                      | Custom user agent string                    |
+| `SetQuotaProject(project)`              | Quota project for billing                   |
+| `SetScopes(scopes...)`                  | OAuth2 scopes                               |
+| `AddOption(opt)`                        | Append any custom `option.ClientOption`     |
 
 ### Setup Examples
 
@@ -248,7 +248,7 @@ func main() {
         ProjectId: "my-project",
         Location:  "us-central1",
     }
-    cfg.SetCredentialFile("/path/to/credentials.json")
+    cfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/credentials.json")
     gcpsvc.Manager.Register("gs", cfg)
 
     // Now use the VFS manager — gs resolves config automatically
@@ -262,7 +262,7 @@ func main() {
 
 ```go
 cfg := &gcpsvc.Config{ProjectId: "my-project"}
-cfg.SetCredentialFile("/path/to/service-account.json")
+cfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/service-account.json")
 gcpsvc.Manager.Register("gs", cfg)
 ```
 
@@ -300,17 +300,17 @@ Register different configs for different buckets. The bucket name in the GCS URL
 ```go
 // Default fallback for any bucket without a specific config
 defaultCfg := &gcpsvc.Config{ProjectId: "my-project"}
-defaultCfg.SetCredentialFile("/path/to/default-creds.json")
+defaultCfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/default-creds.json")
 gcpsvc.Manager.Register("gs", defaultCfg)
 
 // Bucket-specific: production data with prod credentials
 prodCfg := &gcpsvc.Config{ProjectId: "prod-project"}
-prodCfg.SetCredentialFile("/path/to/prod-creds.json")
+prodCfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/prod-creds.json")
 gcpsvc.Manager.Register("prod-data-bucket", prodCfg)
 
 // Bucket-specific: EU data in a different project
 euCfg := &gcpsvc.Config{ProjectId: "eu-project", Location: "europe-west1"}
-euCfg.SetCredentialFile("/path/to/eu-creds.json")
+euCfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/eu-creds.json")
 gcpsvc.Manager.Register("eu-data-bucket", euCfg)
 ```
 
@@ -593,8 +593,8 @@ gcloud projects add-iam-policy-binding my-project \
 
 Credentials can be provided through any of the following methods:
 
-- `gcpsvc.Config` with `SetCredentialFile(path)` — service account JSON key file
-- `gcpsvc.Config` with `SetCredentialJSON(json)` — inline service account JSON
+- `gcpsvc.Config` with `SetAuthCredentialFile(credType, path)` — service account JSON key file
+- `gcpsvc.Config` with `SetAuthCredentialJSON(credType, json)` — inline service account JSON
 - `GOOGLE_APPLICATION_CREDENTIALS` environment variable
 - Application Default Credentials (`gcloud auth application-default login`)
 - GCE instance metadata (when running on Google Cloud)

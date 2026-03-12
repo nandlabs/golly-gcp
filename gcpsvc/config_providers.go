@@ -22,21 +22,43 @@ func (c *Config) SetRegion(region string) {
 	c.Location = region
 }
 
-// SetCredentialFile adds a credentials file option and returns the updated options.
+// Deprecated: SetCredentialFile uses a deprecated API with potential security risks.
+// Use SetAuthCredentialFile instead.
 func (c *Config) SetCredentialFile(filePath string) []option.ClientOption {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
 	}
-	c.Options = append(c.Options, option.WithCredentialsFile(filePath))
+	c.Options = append(c.Options, option.WithCredentialsFile(filePath)) //nolint:staticcheck
 	return c.Options
 }
 
-// SetCredentialJSON adds a credentials JSON option and returns the updated options.
+// Deprecated: SetCredentialJSON uses a deprecated API with potential security risks.
+// Use SetAuthCredentialJSON instead.
 func (c *Config) SetCredentialJSON(json []byte) []option.ClientOption {
 	if c.Options == nil {
 		c.Options = make([]option.ClientOption, 0)
 	}
-	c.Options = append(c.Options, option.WithCredentialsJSON(json))
+	c.Options = append(c.Options, option.WithCredentialsJSON(json)) //nolint:staticcheck
+	return c.Options
+}
+
+// SetAuthCredentialFile adds a typed credentials file option and returns the updated options.
+// credType specifies the credential type (e.g. option.ServiceAccount, option.AuthorizedUser).
+func (c *Config) SetAuthCredentialFile(credType option.CredentialsType, filePath string) []option.ClientOption {
+	if c.Options == nil {
+		c.Options = make([]option.ClientOption, 0)
+	}
+	c.Options = append(c.Options, option.WithAuthCredentialsFile(credType, filePath))
+	return c.Options
+}
+
+// SetAuthCredentialJSON adds a typed credentials JSON option and returns the updated options.
+// credType specifies the credential type (e.g. option.ServiceAccount, option.AuthorizedUser).
+func (c *Config) SetAuthCredentialJSON(credType option.CredentialsType, json []byte) []option.ClientOption {
+	if c.Options == nil {
+		c.Options = make([]option.ClientOption, 0)
+	}
+	c.Options = append(c.Options, option.WithAuthCredentialsJSON(credType, json))
 	return c.Options
 }
 

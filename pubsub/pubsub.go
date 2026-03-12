@@ -9,6 +9,7 @@ import (
 	"time"
 
 	gpubsub "cloud.google.com/go/pubsub/v2"
+	"oss.nandlabs.io/golly/ioutils"
 	"oss.nandlabs.io/golly/messaging"
 )
 
@@ -73,7 +74,7 @@ func (p *Provider) Send(u *url.URL, msg messaging.Message, options ...messaging.
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer ioutils.CloserFunc(client)
 
 	publisher, err := resolvePublisher(client, u)
 	if err != nil {
@@ -123,7 +124,7 @@ func (p *Provider) SendBatch(u *url.URL, msgs []messaging.Message, options ...me
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer ioutils.CloserFunc(client)
 
 	publisher, err := resolvePublisher(client, u)
 	if err != nil {
@@ -182,7 +183,7 @@ func (p *Provider) Receive(u *url.URL, options ...messaging.Option) (messaging.M
 	if err != nil {
 		return nil, err
 	}
-	defer client.Close()
+	defer ioutils.CloserFunc(client)
 
 	sub, err := resolveSubscriber(client, u)
 	if err != nil {
@@ -235,7 +236,7 @@ func (p *Provider) ReceiveBatch(u *url.URL, options ...messaging.Option) ([]mess
 	if err != nil {
 		return nil, err
 	}
-	defer client.Close()
+	defer ioutils.CloserFunc(client)
 
 	sub, err := resolveSubscriber(client, u)
 	if err != nil {
@@ -300,7 +301,7 @@ func (p *Provider) AddListener(u *url.URL, listener func(msg messaging.Message),
 
 	sub, err := resolveSubscriber(client, u)
 	if err != nil {
-		client.Close()
+		ioutils.CloserFunc(client)
 		return err
 	}
 
@@ -326,7 +327,7 @@ func (p *Provider) AddListener(u *url.URL, listener func(msg messaging.Message),
 
 	go func() {
 		defer cancel()
-		defer client.Close()
+		defer ioutils.CloserFunc(client)
 		logger.InfoF("Pub/Sub listener started for subscription %s", u.Host)
 
 		err := sub.Receive(ctx, func(_ context.Context, m *gpubsub.Message) {

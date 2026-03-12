@@ -39,7 +39,7 @@ import (
 cfg := &gcpsvc.Config{}
 cfg.SetProjectId("my-gcp-project")
 cfg.SetRegion("us-central1")
-cfg.SetCredentialFile("/path/to/credentials.json")
+cfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/credentials.json")
 cfg.SetEndpoint("https://custom-endpoint")
 cfg.SetUserAgent("my-app/1.0")
 cfg.SetQuotaProject("my-quota-project")

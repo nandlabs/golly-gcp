@@ -5,10 +5,7 @@ import (
 	"iter"
 
 	googlegenai "google.golang.org/genai"
-	"oss.nandlabs.io/golly/l3"
 )
-
-var logger = l3.Get()
 
 // generateAPI abstracts the Google GenAI models client methods used by the provider.
 // This interface enables testing with mock implementations.

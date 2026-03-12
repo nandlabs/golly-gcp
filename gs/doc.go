@@ -10,7 +10,7 @@
 //		ProjectId: "my-project",
 //		Location:  "us-central1",
 //	}
-//	cfg.SetCredentialFile("/path/to/credentials.json")
+//	cfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/credentials.json")
 //	gcpsvc.Manager.Register("gs", cfg)
 //
 //	// Then use via the VFS manager:

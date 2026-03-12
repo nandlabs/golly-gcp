@@ -166,7 +166,7 @@ func main() {
 
 ```go
 cfg := &gcpsvc.Config{ProjectId: "my-gcp-project"}
-cfg.SetCredentialFile("/path/to/service-account.json")
+cfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/service-account.json")
 gcpsvc.Manager.Register("pubsub", cfg)
 ```
 
@@ -189,7 +189,7 @@ gcloud beta emulators pubsub start --project=my-gcp-project
 ```go
 // Orders topic uses a specific project
 ordersCfg := &gcpsvc.Config{ProjectId: "orders-project"}
-ordersCfg.SetCredentialFile("/path/to/orders-sa.json")
+ordersCfg.SetAuthCredentialFile(option.ServiceAccount, "/path/to/orders-sa.json")
 gcpsvc.Manager.Register("orders-topic", ordersCfg)
 
 // Default for all other Pub/Sub operations
@@ -516,8 +516,8 @@ All `BaseMessage` methods (SetBodyStr, ReadAsStr, SetStrHeader, etc.) are also a
 4. **Topics & subscriptions** created beforehand
 5. **Authentication** — one of:
    - Application Default Credentials (`gcloud auth application-default login`)
-   - Service account key file (via `cfg.SetCredentialFile(...)`)
-   - Service account JSON bytes (via `cfg.SetCredentialJSON(...)`)
+   - Service account key file (via `cfg.SetAuthCredentialFile(...)`)
+   - Service account JSON bytes (via `cfg.SetAuthCredentialJSON(...)`)
    - Workload Identity (on GKE)
 
 ## Contributing

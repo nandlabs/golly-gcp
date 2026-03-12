@@ -13,6 +13,7 @@ func TestGetConfig_NilURL(t *testing.T) {
 	result := GetConfig(nil, "test-svc")
 	if result == nil {
 		t.Fatal("expected config from name fallback, got nil")
+		return
 	}
 	if result.ProjectId != "fallback-project" {
 		t.Errorf("expected ProjectId 'fallback-project', got %q", result.ProjectId)
@@ -28,6 +29,7 @@ func TestGetConfig_ByHost(t *testing.T) {
 	result := GetConfig(u, "fallback")
 	if result == nil {
 		t.Fatal("expected config from host lookup, got nil")
+		return
 	}
 	if result.ProjectId != "host-project" {
 		t.Errorf("expected ProjectId 'host-project', got %q", result.ProjectId)
@@ -44,6 +46,7 @@ func TestGetConfig_ByHostAndPath(t *testing.T) {
 	result := GetConfig(u, "fallback")
 	if result == nil {
 		t.Fatal("expected config from host+path lookup, got nil")
+		return
 	}
 	if result.ProjectId != "hostpath-project" {
 		t.Errorf("expected ProjectId 'hostpath-project', got %q", result.ProjectId)

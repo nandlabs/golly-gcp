@@ -128,9 +128,7 @@ func TestGCPProvider_Generate_Error(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !errors.Is(err, errors.Unwrap(err)) {
-		// Just check the error message contains our wrapped text
-	}
+	_ = err // error already validated as non-nil above
 }
 
 func TestGCPProvider_Generate_WithOptions(t *testing.T) {

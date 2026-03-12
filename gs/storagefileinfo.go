@@ -8,38 +8,43 @@ import (
 	"oss.nandlabs.io/golly/vfs"
 )
 
+// StorageFileInfo implements the vfs.VFileInfo interface for GCS objects.
 type StorageFileInfo struct {
 	fs           vfs.VFileSystem
 	isDir        bool
 	key          string
 	lastModified time.Time
 	size         int64
+	contentType  string
 }
 
+// Name returns the object key.
 func (f *StorageFileInfo) Name() string {
 	return f.key
 }
 
+// Size returns the size of the object in bytes.
 func (f *StorageFileInfo) Size() int64 {
 	return f.size
 }
 
+// Mode returns the file mode bits. Not applicable for GCS, returns 0.
 func (f *StorageFileInfo) Mode() os.FileMode {
-	// Not applicable for GCP Storage objects, return default value
 	return 0
 }
 
+// ModTime returns the last modified time of the object.
 func (f *StorageFileInfo) ModTime() time.Time {
 	return f.lastModified
 }
 
+// IsDir returns true if the GCS object represents a directory (prefix).
 func (f *StorageFileInfo) IsDir() bool {
-	// Not applicable for GCP Storage objects, return default value
 	return f.isDir
 }
 
+// Sys returns the underlying VFileSystem.
 func (f *StorageFileInfo) Sys() interface{} {
-	// Not applicable for GCP Storage objects, return default value
 	return f.fs
 }
 

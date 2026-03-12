@@ -1,0 +1,14 @@
+name: "Stale Issues"
+
+on:
+    schedule:
+        # Run daily at 01:00 UTC
+        - cron: "0 1 * * *"
+    workflow_dispatch:
+
+jobs:
+    stale:
+        uses: nandlabs/oss-workflows/.github/workflows/go-stale.yml@main
+        permissions:
+            issues: write
+            pull-requests: write

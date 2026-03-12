@@ -1,10 +1,12 @@
 package gs
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
@@ -12,160 +14,282 @@ import (
 	"oss.nandlabs.io/golly/vfs"
 )
 
+// StorageFile implements the vfs.VFile interface for GCS objects.
 type StorageFile struct {
 	*vfs.BaseFile
-	bucket     *storage.BucketHandle
-	closers    []io.Closer
-	fs         vfs.VFileSystem
-	storageObj *storage.ObjectHandle
-	urlOpts    *UrlOpts
+	client  *storage.Client
+	fs      *StorageFS
+	urlOpts *urlOpts
+	// reader/writer state
+	reader      io.ReadCloser
+	writeBuffer *bytes.Buffer
+	offset      int64
+	contentType string
 }
 
-func (storageFile *StorageFile) Read(b []byte) (numBytes int, err error) {
-	ctx := context.Background()
-	reader, err := storageFile.storageObj.NewReader(ctx)
-	storageFile.closers = append(storageFile.closers, reader)
-	if err != nil {
-		return
+// Read reads from the GCS object.
+func (f *StorageFile) Read(b []byte) (n int, err error) {
+	if f.reader == nil {
+		obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
+		reader, readErr := obj.NewReader(context.Background())
+		if readErr != nil {
+			return 0, readErr
+		}
+		f.reader = reader
+		f.contentType = reader.Attrs.ContentType
 	}
-	numBytes, err = reader.Read(b)
+	n, err = f.reader.Read(b)
+	f.offset += int64(n)
 	return
 }
 
-func (storageFile *StorageFile) Write(b []byte) (numBytes int, err error) {
-
-	ctx := context.Background()
-	writer := storageFile.storageObj.NewWriter(ctx)
-	storageFile.closers = append(storageFile.closers, writer)
-	numBytes, err = writer.Write(b)
+// Write writes data to a buffer. The data is flushed to GCS on Close.
+func (f *StorageFile) Write(b []byte) (n int, err error) {
+	if f.writeBuffer == nil {
+		f.writeBuffer = &bytes.Buffer{}
+	}
+	n, err = f.writeBuffer.Write(b)
+	f.offset += int64(n)
 	return
 }
 
-func (storageFile *StorageFile) ListAll() (files []vfs.VFile, err error) {
-	ctx := context.Background()
-	logger.InfoF("Listing all objects in bucket %q using ListAll for path %s", storageFile.bucket.BucketName(), storageFile.urlOpts.u.Path)
-	it := storageFile.bucket.Objects(ctx, &storage.Query{
-		Prefix: storageFile.urlOpts.Key,
-	})
+// Seek sets the offset for the next Read or Write. Only io.SeekStart with offset 0 resets the reader.
+func (f *StorageFile) Seek(offset int64, whence int) (int64, error) {
+	if whence == io.SeekStart && offset == 0 {
+		// Reset reader so next Read starts from the beginning
+		if f.reader != nil {
+			_ = f.reader.Close()
+			f.reader = nil
+		}
+		f.offset = 0
+		return 0, nil
+	}
+	return f.offset, fmt.Errorf("seek not fully supported on GCS objects")
+}
+
+// Close flushes any buffered writes to GCS and closes open readers.
+func (f *StorageFile) Close() error {
+	var err error
+	// Flush write buffer to GCS
+	if f.writeBuffer != nil && f.writeBuffer.Len() > 0 {
+		ct := f.contentType
+		if ct == "" {
+			ct = "application/octet-stream"
+		}
+		obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
+		writer := obj.NewWriter(context.Background())
+		writer.ContentType = ct
+		_, writeErr := io.Copy(writer, f.writeBuffer)
+		if writeErr != nil {
+			_ = writer.Close()
+			return writeErr
+		}
+		err = writer.Close()
+		f.writeBuffer = nil
+	}
+	// Close reader
+	if f.reader != nil {
+		closeErr := f.reader.Close()
+		if err == nil {
+			err = closeErr
+		}
+		f.reader = nil
+	}
+	return err
+}
+
+// ListAll lists all objects under this GCS prefix.
+func (f *StorageFile) ListAll() (files []vfs.VFile, err error) {
+	prefix := f.urlOpts.Key
+	if prefix != "" && !strings.HasSuffix(prefix, textutils.ForwardSlashStr) {
+		prefix = prefix + textutils.ForwardSlashStr
+	}
+
+	query := &storage.Query{
+		Prefix: prefix,
+	}
+
+	it := f.client.Bucket(f.urlOpts.Bucket).Objects(context.Background(), query)
 	for {
-		var vFile vfs.VFile
-		attrs, err := it.Next()
-		if err == iterator.Done {
+		attrs, iterErr := it.Next()
+		if iterErr == iterator.Done {
 			break
 		}
-		if err != nil {
-			return nil, err
+		if iterErr != nil {
+			return nil, iterErr
 		}
-		subPath := ""
 
-		if attrs.Prefix == textutils.EmptyStr {
-
-			subPath = attrs.Name
-		} else {
-			subPath = attrs.Prefix
+		key := attrs.Name
+		if attrs.Prefix != "" {
+			key = attrs.Prefix
 		}
-		if storageFile.urlOpts.Key != "" && (subPath == storageFile.urlOpts.Key+textutils.ForwardSlashStr || subPath == storageFile.urlOpts.Key) {
+
+		// Skip self
+		if key == prefix || key == f.urlOpts.Key {
 			continue
 		}
+
 		u := &url.URL{
-			Scheme: storageFile.urlOpts.u.Scheme,
-			Host:   storageFile.urlOpts.u.Host,
-			Path:   subPath,
+			Scheme: GsScheme,
+			Host:   f.urlOpts.Bucket,
+			Path:   "/" + key,
 		}
-		vFile, err = storageFile.fs.Open(u)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, vFile)
-
+		child := newStorageFile(f.client, f.fs, &urlOpts{
+			u:      u,
+			Bucket: f.urlOpts.Bucket,
+			Key:    key,
+		})
+		files = append(files, child)
 	}
-
 	return
 }
 
-func (storageFile *StorageFile) Info() (file vfs.VFileInfo, err error) {
-	ctx := context.Background()
-	attrs, err := storageFile.storageObj.Attrs(ctx)
+// Delete deletes the GCS object.
+func (f *StorageFile) Delete() error {
+	obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
+	return obj.Delete(context.Background())
+}
+
+// DeleteAll deletes all objects under this prefix (for directory-like objects).
+func (f *StorageFile) DeleteAll() error {
+	children, err := f.ListAll()
 	if err != nil {
-		logger.ErrorF("object.Attrs: %v", err)
-		return
+		return err
+	}
+	for _, child := range children {
+		childInfo, infoErr := child.Info()
+		if infoErr != nil {
+			// If we can't get info, try deleting directly
+			if delErr := child.Delete(); delErr != nil {
+				return delErr
+			}
+			continue
+		}
+		if childInfo.IsDir() {
+			if delErr := child.DeleteAll(); delErr != nil {
+				return delErr
+			}
+		} else {
+			if delErr := child.Delete(); delErr != nil {
+				return delErr
+			}
+		}
+	}
+	// Delete the prefix marker itself
+	return f.Delete()
+}
+
+// Info returns the VFileInfo for this GCS object.
+func (f *StorageFile) Info() (vfs.VFileInfo, error) {
+	// Check if this is a "directory" (prefix ending with /)
+	if strings.HasSuffix(f.urlOpts.Key, textutils.ForwardSlashStr) || f.urlOpts.Key == "" {
+		return &StorageFileInfo{
+			fs:    f.fs,
+			isDir: true,
+			key:   f.urlOpts.Key,
+		}, nil
 	}
 
-	file = &StorageFileInfo{
-		fs:           storageFile.fs,
-		isDir:        attrs.Prefix != textutils.EmptyStr,
+	obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
+	attrs, err := obj.Attrs(context.Background())
+	if err != nil {
+		// If Attrs fails, check if it's a prefix (directory)
+		query := &storage.Query{
+			Prefix: f.urlOpts.Key + textutils.ForwardSlashStr,
+		}
+		it := f.client.Bucket(f.urlOpts.Bucket).Objects(context.Background(), query)
+		_, iterErr := it.Next()
+		if iterErr == nil {
+			return &StorageFileInfo{
+				fs:    f.fs,
+				isDir: true,
+				key:   f.urlOpts.Key,
+			}, nil
+		}
+		return nil, err
+	}
+
+	return &StorageFileInfo{
+		fs:           f.fs,
+		isDir:        false,
 		key:          attrs.Name,
 		lastModified: attrs.Updated,
 		size:         attrs.Size,
-	}
-
-	return
+		contentType:  attrs.ContentType,
+	}, nil
 }
 
-func (storageFile *StorageFile) AddProperty(name, value string) (err error) {
-
-	ctx := context.Background()
-
-	attrs, err := storageFile.storageObj.Attrs(ctx)
-	if err != nil {
-		logger.ErrorF("object.Attrs: %v", err)
-		return
+// Parent returns the parent directory of this file.
+func (f *StorageFile) Parent() (vfs.VFile, error) {
+	key := strings.TrimSuffix(f.urlOpts.Key, textutils.ForwardSlashStr)
+	idx := strings.LastIndex(key, textutils.ForwardSlashStr)
+	parentKey := ""
+	if idx > 0 {
+		parentKey = key[:idx+1]
 	}
-
-	newMetadata := attrs.Metadata
-	if newMetadata == nil {
-		newMetadata = make(map[string]string)
+	u := &url.URL{
+		Scheme: GsScheme,
+		Host:   f.urlOpts.Bucket,
+		Path:   "/" + parentKey,
 	}
-	newMetadata[name] = value
-
-	// update the object
-	_, err = storageFile.storageObj.Update(ctx, storage.ObjectAttrsToUpdate{Metadata: newMetadata})
-	if err != nil {
-		logger.ErrorF("object.Update: %v", err)
-		return
-	}
-	logger.InfoF("Added metadata %q=%q to gs://%s/%s\n", name, value, attrs.Bucket, attrs.Name)
-	return
+	return f.fs.Open(u)
 }
 
-func (storageFile *StorageFile) GetProperty(name string) (value string, err error) {
+// Url returns the URL of this file.
+func (f *StorageFile) Url() *url.URL {
+	return f.urlOpts.u
+}
 
+// ContentType returns the content type of the GCS object.
+func (f *StorageFile) ContentType() string {
+	if f.contentType != "" {
+		return f.contentType
+	}
+	return "application/octet-stream"
+}
+
+// AddProperty adds metadata to the GCS object.
+func (f *StorageFile) AddProperty(name, value string) error {
 	ctx := context.Background()
+	obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
 
-	attrs, err := storageFile.storageObj.Attrs(ctx)
+	// Get current metadata
+	attrs, err := obj.Attrs(ctx)
 	if err != nil {
-		logger.ErrorF("object.Attrs: %v", err)
-		return
+		return fmt.Errorf("failed to get object metadata: %w", err)
 	}
 
-	if value, ok := attrs.Metadata[name]; ok {
-		return value, nil
+	metadata := attrs.Metadata
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+	metadata[name] = value
+
+	// Update the object metadata
+	_, err = obj.Update(ctx, storage.ObjectAttrsToUpdate{Metadata: metadata})
+	if err != nil {
+		return fmt.Errorf("failed to update object metadata: %w", err)
 	}
 
+	logger.InfoF("Added metadata %q=%q to gs://%s/%s", name, value, f.urlOpts.Bucket, f.urlOpts.Key)
+	return nil
+}
+
+// GetProperty retrieves a metadata value from the GCS object.
+func (f *StorageFile) GetProperty(name string) (string, error) {
+	obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
+	attrs, err := obj.Attrs(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("failed to get object metadata: %w", err)
+	}
+
+	if val, ok := attrs.Metadata[name]; ok {
+		return val, nil
+	}
 	return "", fmt.Errorf("metadata key %q not found", name)
 }
 
-func (storageFile *StorageFile) Url() *url.URL {
-	return storageFile.urlOpts.u
-}
-
-func (storageFile *StorageFile) Delete() (err error) {
-
-	ctx := context.Background()
-
-	err = storageFile.storageObj.Delete(ctx)
-	return
-}
-
-func (storageFile *StorageFile) Close() (err error) {
-	if len(storageFile.closers) > 0 {
-		for _, closable := range storageFile.closers {
-			err = closable.Close()
-		}
-	}
-	return
-}
-
-func (storageFile *StorageFile) String() string {
-	return storageFile.urlOpts.u.String()
+// String returns the URL string of the file.
+func (f *StorageFile) String() string {
+	return f.urlOpts.u.String()
 }

@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	cloud.google.com/go/pubsub/v2 v2.4.0
-	cloud.google.com/go/storage v1.61.1
+	cloud.google.com/go/storage v1.61.3
 	google.golang.org/api v0.271.0
 	google.golang.org/genai v1.49.0
 	oss.nandlabs.io/golly v1.4.0

@@ -23,7 +23,7 @@
 
 ## Overview
 
-Golly GCP provides Google Cloud service implementations for core [Golly](https://github.com/nandlabs/golly) interfaces — VFS, Messaging, and GenAI. It uses the official Google Cloud client libraries and follows Golly's provider pattern: blank-import a package to auto-register it, then use standard Golly managers with `gs://` or `pubsub://` URLs.
+Golly GCP provides Google Cloud service implementations for core [Golly](https://github.com/nandlabs/golly) interfaces — VFS, Messaging, GenAI, and Secrets. It uses the official Google Cloud client libraries and follows Golly's provider pattern: blank-import a package to auto-register it, then use standard Golly managers with `gs://` or `pubsub://` URLs.
 
 ## Installation
 
@@ -51,7 +51,13 @@ go get oss.nandlabs.io/golly-gcp
 | ------------------ | -------------------------------------------------------------------------------------------------------- |
 | [gs](gs/README.md) | Google Cloud Storage implementation of the golly VFS interface — read, write, copy, move, list, and walk |
 
-### 📡 Messaging
+### � Secrets
+
+| Package                      | Description                                                                                                          |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| [secrets](secrets/README.md) | GCP Secret Manager implementation of the golly secrets store — get, write, delete, list with caching and versioning  |
+
+### �📡 Messaging
 
 | Package                    | Description                                                                                                         |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |

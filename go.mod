@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	cloud.google.com/go/pubsub/v2 v2.6.0
 	cloud.google.com/go/secretmanager v1.16.0
-	cloud.google.com/go/storage v1.62.1
+	cloud.google.com/go/storage v1.62.2
 	google.golang.org/api v0.276.0
 	google.golang.org/genai v1.54.0
 	oss.nandlabs.io/golly v1.5.0

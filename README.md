@@ -29,13 +29,14 @@ Golly GCP provides Google Cloud service implementations for core [Golly](https:/
 
 | golly-gcp | golly  | google.golang.org/api |
 | --------- | ------ | --------------------- |
+| v0.2.1    | v1.5.1 | v0.280.0              |
 | v0.2.0    | v1.5.0 | v0.276.0              |
 | v0.1.0    | v1.4.0 | v0.271.0              |
 
 ## Installation
 
 ```bash
-go get oss.nandlabs.io/golly-gcp@v0.2.0
+go get oss.nandlabs.io/golly-gcp@v0.2.1
 ```
 
 ## Packages

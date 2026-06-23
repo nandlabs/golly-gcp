@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/secretmanager v1.16.0
 	cloud.google.com/go/storage v1.62.1
 	google.golang.org/api v0.276.0
-	google.golang.org/genai v1.54.0
+	google.golang.org/genai v1.61.0
 	oss.nandlabs.io/golly v1.5.0
 )
 

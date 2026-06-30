@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/storage v1.62.1
 	google.golang.org/api v0.276.0
 	google.golang.org/genai v1.54.0
-	oss.nandlabs.io/golly v1.5.2-0.20260628120322-6c303ede2b6d
+	oss.nandlabs.io/golly v1.5.2-0.20260629140503-7be1edb5f58b
 )
 
 require (

@@ -19,3 +19,18 @@ import (
 func TestStorageFS_ImplementsVFileSystemCtx(t *testing.T) {
 	var _ vfs.VFileSystemCtx = (*StorageFS)(nil)
 }
+
+// TestStorageFS_ImplementsLister guarantees vfs.ListIter dispatches
+// through StorageFS.ListIter rather than falling back to the eager
+// List slice (which would materialize million-object prefixes into
+// one allocation).
+func TestStorageFS_ImplementsLister(t *testing.T) {
+	var _ vfs.Lister = (*StorageFS)(nil)
+}
+
+// TestStorageFile_ImplementsRangeReader guarantees vfs.ReadRange
+// dispatches to GCS's native NewRangeReader instead of Seek+Read
+// (which on cloud backends typically downloads the whole object).
+func TestStorageFile_ImplementsRangeReader(t *testing.T) {
+	var _ vfs.RangeReader = (*StorageFile)(nil)
+}

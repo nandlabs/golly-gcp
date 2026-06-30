@@ -2,6 +2,7 @@ package gs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -177,6 +178,15 @@ func (fs *StorageFS) WalkCtx(ctx context.Context, u *url.URL, fn vfs.WalkFn) err
 			Key:    key,
 		})
 		if walkErr := fn(child); walkErr != nil {
+			if errors.Is(walkErr, vfs.ErrSkipAll) {
+				return nil
+			}
+			if errors.Is(walkErr, vfs.ErrSkipDir) {
+				// GCS has no real directories — at this level the
+				// flat object listing has no children to skip, so
+				// the sentinel behaves the same as continue.
+				continue
+			}
 			return walkErr
 		}
 	}

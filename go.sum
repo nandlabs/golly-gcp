@@ -240,3 +240,5 @@ oss.nandlabs.io/golly v1.5.0 h1:rWKUaJdq/kkoyKkE1Esy2nRlxA91SrqpyvQ+gOVbDfs=
 oss.nandlabs.io/golly v1.5.0/go.mod h1:dredxTV+G+ycC0qEf91gGrCGU8+jqUDzbYONh8lHUhA=
 oss.nandlabs.io/golly v1.5.2-0.20260628120322-6c303ede2b6d h1:jBf8V5Je6L/Od8kK1rrT+rDHgviNhtnjjAcCu3fE9Mk=
 oss.nandlabs.io/golly v1.5.2-0.20260628120322-6c303ede2b6d/go.mod h1:MOpWwT8vzyROsy4hoFl71FyYbqtyDK0GxU1D8xh9PzM=
+oss.nandlabs.io/golly v1.5.2-0.20260629140503-7be1edb5f58b h1:uWskSXFRqm/LIfaxQO0YtRvZf8zjyaLZp1/wUYEYgq4=
+oss.nandlabs.io/golly v1.5.2-0.20260629140503-7be1edb5f58b/go.mod h1:MOpWwT8vzyROsy4hoFl71FyYbqtyDK0GxU1D8xh9PzM=

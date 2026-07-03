@@ -74,6 +74,42 @@ err := store.Delete("my-api-key", context.Background())
 keys, err := store.List(context.Background())
 ```
 
+## Namespacing and Authorization
+
+Wrap the GCP store with a key prefix (per-tenant / per-user / per-env) and an
+optional `Authorizer` hook that runs before every `Get`/`Write`. This is a thin
+convenience over `secrets.Namespace` from `oss.nandlabs.io/golly/secrets` — the
+wrapper is generic; this constructor just wires it to a fresh GCP-backed store.
+
+```go
+import (
+    "oss.nandlabs.io/golly/secrets"
+    gcpsecrets "oss.nandlabs.io/golly-gcp/secrets"
+)
+
+// Authorizer reads the principal from ctx and vetoes any op it doesn't like.
+auth := func(ctx context.Context, op secrets.Op, key string) error {
+    user := userFromCtx(ctx)
+    if !user.CanAccess(op, key) {
+        return fmt.Errorf("%w: user %s", secrets.ErrForbidden, user.ID)
+    }
+    return nil
+}
+
+store, err := gcpsecrets.NewNamespacedGCPSecretStore(
+    ctx,
+    &gcpsecrets.GCPSecretStoreConfig{ProjectID: "my-gcp-project"},
+    "tenants/"+tenantID,
+    secrets.WithAuthorizer(auth),
+)
+// store.Get("api-key", ctx) hits GCP as "tenants/<tenantID>/api-key".
+```
+
+The returned value is a `secrets.Store`. If you also need the GCP-specific
+methods (`List`, `Delete`, `GetClient`, `ClearCache`, `Close`) use
+`NewGCPSecretStore` directly and pass the result to `secrets.Namespace`
+yourself.
+
 ## IAM Permissions
 
 Minimum IAM role required: `roles/secretmanager.secretAccessor`

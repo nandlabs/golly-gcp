@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/singleflight"
 	"oss.nandlabs.io/golly/cache"
 )
 
@@ -64,10 +65,24 @@ type Config struct {
 // Client is a cache.Cache[string, []byte] backed by Memorystore for Redis.
 type Client struct {
 	rdb redis.UniversalClient
+
+	// group provides in-process single-flight for GetOrLoad — protects the
+	// upstream loader from thundering-herd traffic from *this* process.
+	// See loader.go.
+	group singleflight.Group
 }
 
 // Compile-time check that Client satisfies cache.Cache[string, []byte].
 var _ cache.Cache[string, []byte] = (*Client)(nil)
+
+// Compile-time check that Client also satisfies the optional Sweeper and
+// Loader capabilities defined in oss.nandlabs.io/golly/cache. These are
+// opt-in interfaces backends implement when the capability is meaningful
+// for that store — see sweeper.go and loader.go.
+var (
+	_ cache.Sweeper                = (*Client)(nil)
+	_ cache.Loader[string, []byte] = (*Client)(nil)
+)
 
 // ErrInvalidConfig is returned by New when Config is unusable.
 var ErrInvalidConfig = errors.New("memorystore: invalid config")

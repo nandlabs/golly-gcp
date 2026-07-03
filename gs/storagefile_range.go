@@ -33,13 +33,13 @@ func (f *StorageFile) ReadRange(ctx context.Context, off, length int64) ([]byte,
 
 	r, err := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key).NewRangeReader(ctx, off, wantLen)
 	if err != nil {
-		return nil, err
+		return nil, mapGCSErr(err)
 	}
 	defer func() { _ = r.Close() }()
 
 	buf, err := io.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return nil, mapGCSErr(err)
 	}
 	if length > 0 && len(buf) == 0 {
 		return nil, io.EOF

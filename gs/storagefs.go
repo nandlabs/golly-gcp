@@ -48,7 +48,7 @@ func (fs *StorageFS) Create(u *url.URL) (vfs.VFile, error) {
 	// Create empty object
 	writer := object.NewWriter(context.Background())
 	if err = writer.Close(); err != nil {
-		return nil, err
+		return nil, mapGCSErr(err)
 	}
 
 	return newStorageFile(client, fs, opts), nil
@@ -82,7 +82,7 @@ func (fs *StorageFS) MkdirAll(u *url.URL) (vfs.VFile, error) {
 
 	writer := object.NewWriter(context.Background())
 	if err = writer.Close(); err != nil {
-		return nil, err
+		return nil, mapGCSErr(err)
 	}
 
 	// Update opts with directory key
@@ -197,7 +197,7 @@ func (fs *StorageFS) copySingleObject(client *storage.Client, src, dst *urlOpts)
 	dstObj := client.Bucket(dst.Bucket).Object(dst.Key)
 
 	_, err := dstObj.CopierFrom(srcObj).Run(context.Background())
-	return err
+	return mapGCSErr(err)
 }
 
 // Delete deletes the object at the given URL. If it's a directory, deletes all children.
@@ -252,7 +252,7 @@ func (fs *StorageFS) List(u *url.URL) ([]vfs.VFile, error) {
 			break
 		}
 		if iterErr != nil {
-			return nil, iterErr
+			return nil, mapGCSErr(iterErr)
 		}
 
 		key := attrs.Name
@@ -308,7 +308,7 @@ func (fs *StorageFS) Walk(u *url.URL, fn vfs.WalkFn) error {
 			break
 		}
 		if iterErr != nil {
-			return iterErr
+			return mapGCSErr(iterErr)
 		}
 
 		key := attrs.Name

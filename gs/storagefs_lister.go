@@ -74,7 +74,7 @@ func (g *gcsFileIterator) Next(ctx context.Context) (vfs.VFile, error) {
 			return nil, io.EOF
 		}
 		if err != nil {
-			return nil, err
+			return nil, mapGCSErr(err)
 		}
 		key := attrs.Name
 		if attrs.Prefix != "" {

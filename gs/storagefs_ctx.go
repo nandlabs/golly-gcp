@@ -41,7 +41,7 @@ func (fs *StorageFS) CreateCtx(ctx context.Context, u *url.URL) (vfs.VFile, erro
 	}
 	writer := object.NewWriter(ctx)
 	if err := writer.Close(); err != nil {
-		return nil, err
+		return nil, mapGCSErr(err)
 	}
 	return newStorageFile(client, fs, opts), nil
 }
@@ -62,7 +62,7 @@ func (fs *StorageFS) MkdirAllCtx(ctx context.Context, u *url.URL) (vfs.VFile, er
 	}
 	writer := client.Bucket(opts.Bucket).Object(key).NewWriter(ctx)
 	if err := writer.Close(); err != nil {
-		return nil, err
+		return nil, mapGCSErr(err)
 	}
 	dirOpts := &urlOpts{
 		u: &url.URL{
@@ -94,7 +94,7 @@ func (fs *StorageFS) DeleteCtx(ctx context.Context, src *url.URL) error {
 		// work could thread ctx through that path too).
 		return newStorageFile(client, fs, srcOpts).DeleteAll()
 	}
-	return client.Bucket(srcOpts.Bucket).Object(srcOpts.Key).Delete(ctx)
+	return mapGCSErr(client.Bucket(srcOpts.Bucket).Object(srcOpts.Key).Delete(ctx))
 }
 
 // ListCtx is the context-aware variant of List.
@@ -122,7 +122,7 @@ func (fs *StorageFS) ListCtx(ctx context.Context, u *url.URL) ([]vfs.VFile, erro
 			break
 		}
 		if iterErr != nil {
-			return nil, iterErr
+			return nil, mapGCSErr(iterErr)
 		}
 		key := attrs.Name
 		if attrs.Prefix != "" {
@@ -166,7 +166,7 @@ func (fs *StorageFS) WalkCtx(ctx context.Context, u *url.URL, fn vfs.WalkFn) err
 			break
 		}
 		if iterErr != nil {
-			return iterErr
+			return mapGCSErr(iterErr)
 		}
 		key := attrs.Name
 		if key == prefix {
@@ -249,7 +249,7 @@ func (fs *StorageFS) copySingleObjectCtx(ctx context.Context, client *storage.Cl
 	srcObj := client.Bucket(src.Bucket).Object(src.Key)
 	dstObj := client.Bucket(dst.Bucket).Object(dst.Key)
 	_, err := dstObj.CopierFrom(srcObj).Run(ctx)
-	return err
+	return mapGCSErr(err)
 }
 
 // MoveCtx is CopyCtx + DeleteCtx.

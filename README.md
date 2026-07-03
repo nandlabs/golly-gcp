@@ -10,7 +10,7 @@
   <a href="https://github.com/nandlabs/golly-gcp/releases/latest"><img src="https://img.shields.io/github/v/release/nandlabs/golly-gcp?label=latest&color=228B22" alt="Release"></a>
   <a href="https://github.com/nandlabs/golly-gcp/releases/latest"><img src="https://img.shields.io/github/release-date/nandlabs/golly-gcp?label=released&color=00ADD8" alt="Release Date"></a>
   <a href="https://pkg.go.dev/oss.nandlabs.io/golly-gcp"><img src="https://godoc.org/oss.nandlabs.io/golly-gcp?status.svg" alt="GoDoc"></a>
-  <a href="https://github.com/nandlabs/golly-gcp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nandlabs/golly-gcp?color=blue" alt="License"></a>
+  <a href="https://github.com/nandlabs/golly-gcp/blob/main/LICENSING.md"><img src="https://img.shields.io/github/license/nandlabs/golly-gcp?color=blue" alt="License"></a>
 </p>
 
 <p align="center">

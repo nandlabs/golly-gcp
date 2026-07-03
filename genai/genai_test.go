@@ -14,6 +14,7 @@ import (
 type mockGenerateAPI struct {
 	generateFunc       func(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.GenerateContentConfig) (*googlegenai.GenerateContentResponse, error)
 	generateStreamFunc func(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.GenerateContentConfig) iter.Seq2[*googlegenai.GenerateContentResponse, error]
+	embedFunc          func(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.EmbedContentConfig) (*googlegenai.EmbedContentResponse, error)
 }
 
 func (m *mockGenerateAPI) GenerateContent(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.GenerateContentConfig) (*googlegenai.GenerateContentResponse, error) {
@@ -22,6 +23,13 @@ func (m *mockGenerateAPI) GenerateContent(ctx context.Context, model string, con
 
 func (m *mockGenerateAPI) GenerateContentStream(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.GenerateContentConfig) iter.Seq2[*googlegenai.GenerateContentResponse, error] {
 	return m.generateStreamFunc(ctx, model, contents, config)
+}
+
+func (m *mockGenerateAPI) EmbedContent(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.EmbedContentConfig) (*googlegenai.EmbedContentResponse, error) {
+	if m.embedFunc == nil {
+		return nil, nil
+	}
+	return m.embedFunc(ctx, model, contents, config)
 }
 
 func newTestProvider(mock *mockGenerateAPI) *GCPProvider {

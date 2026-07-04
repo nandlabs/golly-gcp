@@ -64,17 +64,17 @@ func TestProvider_Close(t *testing.T) {
 }
 
 func TestProvider_Close_StopsListeners(t *testing.T) {
-	p := &Provider{}
+	p := &Provider{listeners: map[string][]pubsubListenerEntry{}}
 	cancelled := false
-	p.stopFns = append(p.stopFns, func() { cancelled = true })
+	p.listeners["sub"] = []pubsubListenerEntry{{cancel: func() { cancelled = true }}}
 	if err := p.Close(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !cancelled {
 		t.Error("expected cancel function to be called")
 	}
-	if p.stopFns != nil {
-		t.Error("expected stopFns to be nil after Close")
+	if p.listeners != nil {
+		t.Error("expected listeners map to be nil after Close")
 	}
 }
 

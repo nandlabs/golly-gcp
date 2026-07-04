@@ -31,11 +31,22 @@ const (
 
 var pubsubSchemes = []string{PubSubScheme}
 
+// pubsubListenerEntry tracks a single registered listener so it can be
+// individually cancelled by name via RemoveNamedListener, or as part of
+// a per-host group via RemoveListeners.
+type pubsubListenerEntry struct {
+	name   string // empty for unnamed listeners
+	cancel context.CancelFunc
+}
+
 // Provider implements the messaging.Provider interface for Google Cloud Pub/Sub.
+// It also implements messaging.ListenerRemover so callers can detach
+// previously-registered listeners by URL or by named group without
+// closing the entire provider.
 type Provider struct {
-	closed  atomic.Bool
-	mu      sync.Mutex
-	stopFns []context.CancelFunc // cancel functions for active listeners
+	closed    atomic.Bool
+	mu        sync.Mutex
+	listeners map[string][]pubsubListenerEntry // host (subscription) → listeners
 }
 
 // Id returns the provider id.
@@ -321,8 +332,19 @@ func (p *Provider) AddListener(u *url.URL, listener func(msg messaging.Message),
 		ctx, cancel = context.WithTimeout(context.Background(), timeout)
 	}
 
+	// Recognise the "NamedListener" option (same key as golly's
+	// LocalProvider) so RemoveNamedListener works consistently across
+	// providers.
+	var listenerName string
+	if v, ok := messaging.ResolveOptValue[string]("NamedListener", optResolver); ok {
+		listenerName = v
+	}
+
 	p.mu.Lock()
-	p.stopFns = append(p.stopFns, cancel)
+	if p.listeners == nil {
+		p.listeners = make(map[string][]pubsubListenerEntry)
+	}
+	p.listeners[u.Host] = append(p.listeners[u.Host], pubsubListenerEntry{name: listenerName, cancel: cancel})
 	p.mu.Unlock()
 
 	go func() {
@@ -352,10 +374,56 @@ func (p *Provider) Close() error {
 	p.closed.Store(true)
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for _, cancel := range p.stopFns {
-		cancel()
+	for _, entries := range p.listeners {
+		for _, e := range entries {
+			e.cancel()
+		}
 	}
-	p.stopFns = nil
+	p.listeners = nil
+	return nil
+}
+
+// RemoveListeners cancels every listener registered for the URL. Other
+// URLs are untouched. Idempotent — returns nil if no listeners are
+// registered. Implements messaging.ListenerRemover.
+func (p *Provider) RemoveListeners(u *url.URL) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	entries, ok := p.listeners[u.Host]
+	if !ok {
+		return nil
+	}
+	for _, e := range entries {
+		e.cancel()
+	}
+	delete(p.listeners, u.Host)
+	return nil
+}
+
+// RemoveNamedListener cancels listeners registered under the given name
+// for the URL. Other listeners on the same URL (including unnamed)
+// keep receiving. Idempotent.
+// Implements messaging.ListenerRemover.
+func (p *Provider) RemoveNamedListener(u *url.URL, name string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	entries, ok := p.listeners[u.Host]
+	if !ok {
+		return nil
+	}
+	kept := entries[:0]
+	for _, e := range entries {
+		if e.name == name {
+			e.cancel()
+			continue
+		}
+		kept = append(kept, e)
+	}
+	if len(kept) == 0 {
+		delete(p.listeners, u.Host)
+	} else {
+		p.listeners[u.Host] = kept
+	}
 	return nil
 }
 

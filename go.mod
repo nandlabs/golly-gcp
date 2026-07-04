@@ -6,6 +6,10 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.6.0
 	cloud.google.com/go/secretmanager v1.16.0
 	cloud.google.com/go/storage v1.62.1
+	github.com/alicebob/miniredis/v2 v2.38.0
+	github.com/redis/go-redis/v9 v9.21.0
+	golang.org/x/oauth2 v0.36.0
+	golang.org/x/sync v0.21.0
 	google.golang.org/api v0.276.0
 	google.golang.org/genai v1.54.0
 	oss.nandlabs.io/golly v1.7.0
@@ -39,6 +43,7 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.42.0 // indirect
@@ -49,10 +54,9 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.15.0 // indirect

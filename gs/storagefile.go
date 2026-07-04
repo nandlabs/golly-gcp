@@ -33,7 +33,7 @@ func (f *StorageFile) Read(b []byte) (n int, err error) {
 		obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
 		reader, readErr := obj.NewReader(context.Background())
 		if readErr != nil {
-			return 0, readErr
+			return 0, mapGCSErr(readErr)
 		}
 		f.reader = reader
 		f.contentType = reader.Attrs.ContentType
@@ -82,9 +82,9 @@ func (f *StorageFile) Close() error {
 		_, writeErr := io.Copy(writer, f.writeBuffer)
 		if writeErr != nil {
 			_ = writer.Close()
-			return writeErr
+			return mapGCSErr(writeErr)
 		}
-		err = writer.Close()
+		err = mapGCSErr(writer.Close())
 		f.writeBuffer = nil
 	}
 	// Close reader
@@ -116,7 +116,7 @@ func (f *StorageFile) ListAll() (files []vfs.VFile, err error) {
 			break
 		}
 		if iterErr != nil {
-			return nil, iterErr
+			return nil, mapGCSErr(iterErr)
 		}
 
 		key := attrs.Name
@@ -147,7 +147,7 @@ func (f *StorageFile) ListAll() (files []vfs.VFile, err error) {
 // Delete deletes the GCS object.
 func (f *StorageFile) Delete() error {
 	obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
-	return obj.Delete(context.Background())
+	return mapGCSErr(obj.Delete(context.Background()))
 }
 
 // DeleteAll deletes all objects under this prefix (for directory-like objects).
@@ -206,7 +206,7 @@ func (f *StorageFile) Info() (vfs.VFileInfo, error) {
 				key:   f.urlOpts.Key,
 			}, nil
 		}
-		return nil, err
+		return nil, mapGCSErr(err)
 	}
 
 	return &StorageFileInfo{
@@ -256,7 +256,7 @@ func (f *StorageFile) AddProperty(name, value string) error {
 	// Get current metadata
 	attrs, err := obj.Attrs(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get object metadata: %w", err)
+		return fmt.Errorf("failed to get object metadata: %w", mapGCSErr(err))
 	}
 
 	metadata := attrs.Metadata
@@ -268,7 +268,7 @@ func (f *StorageFile) AddProperty(name, value string) error {
 	// Update the object metadata
 	_, err = obj.Update(ctx, storage.ObjectAttrsToUpdate{Metadata: metadata})
 	if err != nil {
-		return fmt.Errorf("failed to update object metadata: %w", err)
+		return fmt.Errorf("failed to update object metadata: %w", mapGCSErr(err))
 	}
 
 	logger.InfoF("Added metadata %q=%q to gs://%s/%s", name, value, f.urlOpts.Bucket, f.urlOpts.Key)
@@ -280,7 +280,7 @@ func (f *StorageFile) GetProperty(name string) (string, error) {
 	obj := f.client.Bucket(f.urlOpts.Bucket).Object(f.urlOpts.Key)
 	attrs, err := obj.Attrs(context.Background())
 	if err != nil {
-		return "", fmt.Errorf("failed to get object metadata: %w", err)
+		return "", fmt.Errorf("failed to get object metadata: %w", mapGCSErr(err))
 	}
 
 	if val, ok := attrs.Metadata[name]; ok {

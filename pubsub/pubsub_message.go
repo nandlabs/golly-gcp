@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"fmt"
+	"net/url"
 
 	gpubsub "cloud.google.com/go/pubsub/v2"
 	"oss.nandlabs.io/golly/messaging"
@@ -19,6 +20,10 @@ type MessagePubSub struct {
 	provider *Provider
 	// stringHeaders tracks all headers as string key-value pairs for Pub/Sub attributes.
 	stringHeaders map[string]string
+	// rsvpURL is the source subscription URL, used to attribute observer
+	// OnAck/OnNack calls. Populated when Provider.toMessage is called
+	// from a Receive path; nil for outbound messages.
+	rsvpURL *url.URL
 }
 
 // trackHeader stores the string representation of a header value.
@@ -83,14 +88,26 @@ func (m *MessagePubSub) SetFloat64Header(key string, value float64) {
 // If accept is true, the message is acknowledged (removed from subscription).
 // If accept is false, the message is nacked (made available for redelivery).
 // For outbound messages (no underlying Pub/Sub message), this is a no-op.
+//
+// Fires the provider observer's OnAck / OnNack hook. GCP Pub/Sub's Nack
+// is always requeue-effective (broker retries per subscription policy),
+// so OnNack is fired with requeue=true.
 func (m *MessagePubSub) Rsvp(accept bool, options ...messaging.Option) error {
 	if m.pubsubMessage == nil {
 		return nil
 	}
 	if accept {
 		m.pubsubMessage.Ack()
+		if m.provider != nil {
+			m.provider.getObserver().OnAck(m.rsvpURL, m)
+		}
 	} else {
 		m.pubsubMessage.Nack()
+		if m.provider != nil {
+			// requeue=true: Pub/Sub Nack always makes the message eligible
+			// for redelivery. See Provider.Rsvp docs above.
+			m.provider.getObserver().OnNack(m.rsvpURL, m, true)
+		}
 	}
 	return nil
 }

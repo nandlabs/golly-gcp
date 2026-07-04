@@ -171,7 +171,72 @@ func buildGenerateConfig(options *gollygenai.Options, systemInstruction *googleg
 		config.ResponseSchema = convertSchema(schema)
 	}
 
+	if tools := options.GetTools(); len(tools) > 0 {
+		config.Tools = convertTools(tools)
+	}
+
+	if choice := options.GetToolChoice(); choice != nil {
+		config.ToolConfig = convertToolChoice(choice)
+	}
+
 	return config
+}
+
+// convertTools translates a slice of golly genai Tool declarations into the
+// Google GenAI SDK's []*googlegenai.Tool. Today only function-declaration tools
+// are supported by the golly abstraction; each golly Tool becomes one Google
+// Tool with a single FunctionDeclarations entry.
+func convertTools(tools []gollygenai.Tool) []*googlegenai.Tool {
+	if len(tools) == 0 {
+		return nil
+	}
+	var out []*googlegenai.Tool
+	for i := range tools {
+		fn := tools[i].Function
+		if fn == nil {
+			continue
+		}
+		out = append(out, &googlegenai.Tool{
+			FunctionDeclarations: []*googlegenai.FunctionDeclaration{
+				{
+					Name:        fn.Name,
+					Description: fn.Description,
+					Parameters:  convertSchema(fn.Parameters),
+				},
+			},
+		})
+	}
+	return out
+}
+
+// convertToolChoice translates a golly genai ToolChoice into the Google GenAI
+// SDK's *googlegenai.ToolConfig. Mode mapping:
+//
+//	ToolChoiceAuto     -> FunctionCallingConfigModeAuto
+//	ToolChoiceNone     -> FunctionCallingConfigModeNone
+//	ToolChoiceRequired -> FunctionCallingConfigModeAny
+//	ToolChoiceNamed    -> FunctionCallingConfigModeAny + AllowedFunctionNames=[name]
+func convertToolChoice(choice *gollygenai.ToolChoice) *googlegenai.ToolConfig {
+	if choice == nil {
+		return nil
+	}
+	fcc := &googlegenai.FunctionCallingConfig{}
+	switch choice.Mode {
+	case gollygenai.ToolChoiceAuto:
+		fcc.Mode = googlegenai.FunctionCallingConfigModeAuto
+	case gollygenai.ToolChoiceNone:
+		fcc.Mode = googlegenai.FunctionCallingConfigModeNone
+	case gollygenai.ToolChoiceRequired:
+		fcc.Mode = googlegenai.FunctionCallingConfigModeAny
+	case gollygenai.ToolChoiceNamed:
+		fcc.Mode = googlegenai.FunctionCallingConfigModeAny
+		if choice.Name != "" {
+			fcc.AllowedFunctionNames = []string{choice.Name}
+		}
+	default:
+		fcc.Mode = googlegenai.FunctionCallingConfigModeAuto
+	}
+	return &googlegenai.ToolConfig{FunctionCallingConfig: fcc}
 }
 
 // toGenResponse converts a google genai GenerateContentResponse to a golly genai GenResponse.

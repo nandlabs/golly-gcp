@@ -31,9 +31,18 @@ const (
 
 var pubsubSchemes = []string{PubSubScheme}
 
+// pubsubListenerEntry tracks a single registered listener so it can be
+// individually cancelled by name via RemoveNamedListener, or as part of
+// a per-host group via RemoveListeners.
+type pubsubListenerEntry struct {
+	name   string // empty for unnamed listeners
+	cancel context.CancelFunc
+}
+
 // Provider implements the messaging.Provider interface for Google Cloud Pub/Sub.
 //
-// It also satisfies the following v1.7.0 capability interfaces:
+// It also satisfies the following capability interfaces:
+//   - messaging.ListenerRemover (per-URL / named-group listener teardown)
 //   - messaging.ProducerCtx (context-aware send)
 //   - messaging.ReceiverCtx (context-aware receive / listener teardown)
 //   - messaging.ObservableProvider (observer hooks around Send/Receive/Ack/Nack)
@@ -43,9 +52,9 @@ var pubsubSchemes = []string{PubSubScheme}
 // keyed delivery — the GCP SDK returns an error otherwise, which this
 // provider surfaces as-is.
 type Provider struct {
-	closed  atomic.Bool
-	mu      sync.Mutex
-	stopFns []context.CancelFunc // cancel functions for active listeners
+	closed    atomic.Bool
+	mu        sync.Mutex
+	listeners map[string][]pubsubListenerEntry // host (subscription) → listeners
 
 	// observer holds a messaging.Observer for metrics / tracing hooks.
 	// atomic.Value wraps observerHolder so callers can install or clear
@@ -154,12 +163,19 @@ func (p *Provider) SendCtx(ctx context.Context, u *url.URL, msg messaging.Messag
 	}
 	defer publisher.Stop()
 
+	optResolver := messaging.NewOptionsResolver(options...)
+
+	// Validate broker-targeted options (rejects AtMostOnce, ConsumerPull, and
+	// malformed values before we spend network I/O on the publish).
+	if _, err := applyBrokerOptions(optResolver); err != nil {
+		return err
+	}
+
 	message := &gpubsub.Message{
 		Data: msg.ReadBytes(),
 	}
 
 	// Apply ordering key: prefer explicit option, else Keyed capability.
-	optResolver := messaging.NewOptionsResolver(options...)
 	if v, ok := optResolver.Get(OptOrderingKey); ok {
 		publisher.EnableMessageOrdering = true
 		message.OrderingKey = v.(string)
@@ -209,6 +225,12 @@ func (p *Provider) SendBatchCtx(ctx context.Context, u *url.URL, msgs []messagin
 	defer publisher.Stop()
 
 	optResolver := messaging.NewOptionsResolver(options...)
+
+	// Validate broker-targeted options up-front on the batch too.
+	if _, err := applyBrokerOptions(optResolver); err != nil {
+		return err
+	}
+
 	explicitKey, hasExplicitKey := optResolver.Get(OptOrderingKey)
 
 	obs := p.getObserver()
@@ -360,6 +382,11 @@ func (p *Provider) ReceiveBatchCtx(ctx context.Context, u *url.URL, options ...m
 
 	optResolver := messaging.NewOptionsResolver(options...)
 
+	brokerOpts, err := applyBrokerOptions(optResolver)
+	if err != nil {
+		return nil, err
+	}
+
 	batchSize := 10
 	if v, ok := optResolver.Get(OptBatchSize); ok {
 		batchSize = v.(int)
@@ -381,6 +408,14 @@ func (p *Provider) ReceiveBatchCtx(ctx context.Context, u *url.URL, options ...m
 
 	rctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	// Apply broker-targeted receive settings (MaxExtension from AckTimeout)
+	// and run the admin-plane verifications (DeadLetterPolicy / exactly-once)
+	// against the existing subscription. Errors here surface before we begin
+	// pulling messages.
+	if err := enforceServerSideBrokerOptions(ctx, client, sub, brokerOpts); err != nil {
+		return nil, err
+	}
 
 	obs := p.getObserver()
 
@@ -436,6 +471,12 @@ func (p *Provider) AddListenerCtx(ctx context.Context, u *url.URL, listener func
 
 	optResolver := messaging.NewOptionsResolver(options...)
 
+	brokerOpts, err := applyBrokerOptions(optResolver)
+	if err != nil {
+		ioutils.CloserFunc(client)
+		return err
+	}
+
 	// Configure subscriber receive settings
 	if v, ok := optResolver.Get(OptMaxOutstandingMessages); ok {
 		sub.ReceiveSettings.MaxOutstandingMessages = v.(int)
@@ -457,8 +498,29 @@ func (p *Provider) AddListenerCtx(ctx context.Context, u *url.URL, listener func
 		lctx, cancel = context.WithCancel(ctx)
 	}
 
+	// Apply broker-targeted receive settings (MaxExtension from AckTimeout)
+	// and run the admin-plane verifications (DeadLetterPolicy / exactly-once)
+	// against the existing subscription. The broker-targeted MaxExtension
+	// wins over the pubsub-specific OptMaxExtension when both are set.
+	if err := enforceServerSideBrokerOptions(ctx, client, sub, brokerOpts); err != nil {
+		cancel()
+		ioutils.CloserFunc(client)
+		return err
+	}
+
+	// Recognise the "NamedListener" option (same key as golly's
+	// LocalProvider) so RemoveNamedListener works consistently across
+	// providers.
+	var listenerName string
+	if v, ok := messaging.ResolveOptValue[string]("NamedListener", optResolver); ok {
+		listenerName = v
+	}
+
 	p.mu.Lock()
-	p.stopFns = append(p.stopFns, cancel)
+	if p.listeners == nil {
+		p.listeners = make(map[string][]pubsubListenerEntry)
+	}
+	p.listeners[u.Host] = append(p.listeners[u.Host], pubsubListenerEntry{name: listenerName, cancel: cancel})
 	p.mu.Unlock()
 
 	obs := p.getObserver()
@@ -529,10 +591,56 @@ func (p *Provider) Close() error {
 	p.closed.Store(true)
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for _, cancel := range p.stopFns {
-		cancel()
+	for _, entries := range p.listeners {
+		for _, e := range entries {
+			e.cancel()
+		}
 	}
-	p.stopFns = nil
+	p.listeners = nil
+	return nil
+}
+
+// RemoveListeners cancels every listener registered for the URL. Other
+// URLs are untouched. Idempotent — returns nil if no listeners are
+// registered. Implements messaging.ListenerRemover.
+func (p *Provider) RemoveListeners(u *url.URL) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	entries, ok := p.listeners[u.Host]
+	if !ok {
+		return nil
+	}
+	for _, e := range entries {
+		e.cancel()
+	}
+	delete(p.listeners, u.Host)
+	return nil
+}
+
+// RemoveNamedListener cancels listeners registered under the given name
+// for the URL. Other listeners on the same URL (including unnamed)
+// keep receiving. Idempotent.
+// Implements messaging.ListenerRemover.
+func (p *Provider) RemoveNamedListener(u *url.URL, name string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	entries, ok := p.listeners[u.Host]
+	if !ok {
+		return nil
+	}
+	kept := entries[:0]
+	for _, e := range entries {
+		if e.name == name {
+			e.cancel()
+			continue
+		}
+		kept = append(kept, e)
+	}
+	if len(kept) == 0 {
+		delete(p.listeners, u.Host)
+	} else {
+		p.listeners[u.Host] = kept
+	}
 	return nil
 }
 

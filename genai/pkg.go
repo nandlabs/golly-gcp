@@ -12,4 +12,5 @@ import (
 type generateAPI interface {
 	GenerateContent(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.GenerateContentConfig) (*googlegenai.GenerateContentResponse, error)
 	GenerateContentStream(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.GenerateContentConfig) iter.Seq2[*googlegenai.GenerateContentResponse, error]
+	EmbedContent(ctx context.Context, model string, contents []*googlegenai.Content, config *googlegenai.EmbedContentConfig) (*googlegenai.EmbedContentResponse, error)
 }

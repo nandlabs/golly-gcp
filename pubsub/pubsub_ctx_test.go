@@ -276,9 +276,9 @@ func TestSendCtx_KeyedMapsToOrderingKey(t *testing.T) {
 	}
 	psMsg := msg.(*MessagePubSub)
 	_, _ = psMsg.SetBodyStr("keyed-body")
-	// Set the routing key via the Keyed capability on the embedded
-	// BaseMessage.
-	psMsg.BaseMessage.SetRoutingKey("customer-42")
+	// Set the routing key via the Keyed capability (promoted from
+	// the embedded BaseMessage).
+	psMsg.SetRoutingKey("customer-42")
 
 	u, _ := url.Parse("pubsub://keyed-topic")
 

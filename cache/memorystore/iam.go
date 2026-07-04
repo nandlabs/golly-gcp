@@ -69,7 +69,10 @@ func IAMAuthProvider(opts IAMAuthOptions) func(ctx context.Context) (string, err
 				err   error
 			)
 			if len(opts.CredentialsJSON) > 0 {
-				creds, err = google.CredentialsFromJSON(ctx, opts.CredentialsJSON, scopes...)
+				// CredentialsFromJSONWithParams is the non-deprecated
+				// equivalent — it validates the credential configuration
+				// explicitly per google-auth guidance.
+				creds, err = google.CredentialsFromJSONWithParams(ctx, opts.CredentialsJSON, google.CredentialsParams{Scopes: scopes})
 			} else {
 				creds, err = google.FindDefaultCredentials(ctx, scopes...)
 			}

@@ -12,7 +12,7 @@ require (
 	golang.org/x/sync v0.21.0
 	google.golang.org/api v0.276.0
 	google.golang.org/genai v1.54.0
-	oss.nandlabs.io/golly v1.6.0
+	oss.nandlabs.io/golly v1.7.0
 )
 
 require (

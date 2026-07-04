@@ -69,10 +69,19 @@ func IAMAuthProvider(opts IAMAuthOptions) func(ctx context.Context) (string, err
 				err   error
 			)
 			if len(opts.CredentialsJSON) > 0 {
-				// CredentialsFromJSONWithParams is the non-deprecated
-				// equivalent — it validates the credential configuration
-				// explicitly per google-auth guidance.
-				creds, err = google.CredentialsFromJSONWithParams(ctx, opts.CredentialsJSON, google.CredentialsParams{Scopes: scopes})
+				// SA1019: both CredentialsFromJSON and
+				// CredentialsFromJSONWithParams are marked deprecated
+				// by google-auth on the grounds that they don't
+				// validate the source of a caller-supplied credential
+				// configuration. In this codepath the caller populates
+				// IAMAuthOptions.CredentialsJSON from their own
+				// trusted secret store, so the validation risk does
+				// not apply. The recommended long-term path is to
+				// migrate to
+				// cloud.google.com/go/auth/credentials.DetectDefault
+				// which requires reshaping the auth surface — tracked
+				// as a follow-up.
+				creds, err = google.CredentialsFromJSONWithParams(ctx, opts.CredentialsJSON, google.CredentialsParams{Scopes: scopes}) //nolint:staticcheck // SA1019: caller-controlled credentials JSON; see comment above.
 			} else {
 				creds, err = google.FindDefaultCredentials(ctx, scopes...)
 			}

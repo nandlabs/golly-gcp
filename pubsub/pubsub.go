@@ -93,12 +93,19 @@ func (p *Provider) Send(u *url.URL, msg messaging.Message, options ...messaging.
 	}
 	defer publisher.Stop()
 
+	optResolver := messaging.NewOptionsResolver(options...)
+
+	// Validate broker-targeted options (rejects AtMostOnce, ConsumerPull, and
+	// malformed values before we spend network I/O on the publish).
+	if _, err := applyBrokerOptions(optResolver); err != nil {
+		return err
+	}
+
 	message := &gpubsub.Message{
 		Data: msg.ReadBytes(),
 	}
 
 	// Apply ordering key if provided
-	optResolver := messaging.NewOptionsResolver(options...)
 	if v, ok := optResolver.Get(OptOrderingKey); ok {
 		publisher.EnableMessageOrdering = true
 		message.OrderingKey = v.(string)
@@ -144,6 +151,12 @@ func (p *Provider) SendBatch(u *url.URL, msgs []messaging.Message, options ...me
 	defer publisher.Stop()
 
 	optResolver := messaging.NewOptionsResolver(options...)
+
+	// Validate broker-targeted options up-front on the batch too.
+	if _, err := applyBrokerOptions(optResolver); err != nil {
+		return err
+	}
+
 	if v, ok := optResolver.Get(OptOrderingKey); ok {
 		publisher.EnableMessageOrdering = true
 		_ = v // ordering key set per-message below
@@ -256,6 +269,11 @@ func (p *Provider) ReceiveBatch(u *url.URL, options ...messaging.Option) ([]mess
 
 	optResolver := messaging.NewOptionsResolver(options...)
 
+	brokerOpts, err := applyBrokerOptions(optResolver)
+	if err != nil {
+		return nil, err
+	}
+
 	batchSize := 10
 	if v, ok := optResolver.Get(OptBatchSize); ok {
 		batchSize = v.(int)
@@ -273,6 +291,14 @@ func (p *Provider) ReceiveBatch(u *url.URL, options ...messaging.Option) ([]mess
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+
+	// Apply broker-targeted receive settings (MaxExtension from AckTimeout)
+	// and run the admin-plane verifications (DeadLetterPolicy / exactly-once)
+	// against the existing subscription. Errors here surface before we begin
+	// pulling messages.
+	if err := enforceServerSideBrokerOptions(ctx, client, sub, brokerOpts); err != nil {
+		return nil, err
+	}
 
 	var (
 		mu   sync.Mutex
@@ -318,6 +344,12 @@ func (p *Provider) AddListener(u *url.URL, listener func(msg messaging.Message),
 
 	optResolver := messaging.NewOptionsResolver(options...)
 
+	brokerOpts, err := applyBrokerOptions(optResolver)
+	if err != nil {
+		ioutils.CloserFunc(client)
+		return err
+	}
+
 	// Configure subscriber receive settings
 	if v, ok := optResolver.Get(OptMaxOutstandingMessages); ok {
 		sub.ReceiveSettings.MaxOutstandingMessages = v.(int)
@@ -330,6 +362,16 @@ func (p *Provider) AddListener(u *url.URL, listener func(msg messaging.Message),
 	if v, ok := optResolver.Get(OptTimeout); ok {
 		timeout := time.Duration(v.(int)) * time.Second
 		ctx, cancel = context.WithTimeout(context.Background(), timeout)
+	}
+
+	// Apply broker-targeted receive settings (MaxExtension from AckTimeout)
+	// and run the admin-plane verifications (DeadLetterPolicy / exactly-once)
+	// against the existing subscription. The broker-targeted MaxExtension
+	// wins over the pubsub-specific OptMaxExtension when both are set.
+	if err := enforceServerSideBrokerOptions(ctx, client, sub, brokerOpts); err != nil {
+		cancel()
+		ioutils.CloserFunc(client)
+		return err
 	}
 
 	// Recognise the "NamedListener" option (same key as golly's

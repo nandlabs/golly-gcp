@@ -81,7 +81,8 @@ func IAMAuthProvider(opts IAMAuthOptions) func(ctx context.Context) (string, err
 				// cloud.google.com/go/auth/credentials.DetectDefault
 				// which requires reshaping the auth surface — tracked
 				// as a follow-up.
-				creds, err = google.CredentialsFromJSONWithParams(ctx, opts.CredentialsJSON, google.CredentialsParams{Scopes: scopes}) //nolint:staticcheck // SA1019: caller-controlled credentials JSON; see comment above.
+				//lint:ignore SA1019 caller-controlled credentials JSON; see rationale above.
+				creds, err = google.CredentialsFromJSONWithParams(ctx, opts.CredentialsJSON, google.CredentialsParams{Scopes: scopes}) //nolint:staticcheck // SA1019: same as //lint:ignore above; kept for golangci-lint's separate parser.
 			} else {
 				creds, err = google.FindDefaultCredentials(ctx, scopes...)
 			}

@@ -53,25 +53,25 @@ func newPubsubTestEnv(t *testing.T, topic, sub string, orderingOn bool) *pubsubT
 
 	// Still hold onto a dialed conn as a legacy path — some code paths
 	// (kept for compatibility) may want it. Not used by Provider.
-	conn, err := grpc.Dial(srv.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(srv.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		srv.Close()
+		_ = srv.Close()
 		t.Fatalf("grpc dial pstest: %v", err)
 	}
 
 	ctx := context.Background()
 	adminClient, err := gpubsub.NewClient(ctx, testProjectID)
 	if err != nil {
-		conn.Close()
-		srv.Close()
+		_ = conn.Close()
+		_ = srv.Close()
 		t.Fatalf("new pubsub client: %v", err)
 	}
 
 	fqTopic := fmt.Sprintf("projects/%s/topics/%s", testProjectID, topic)
 	if _, err := adminClient.TopicAdminClient.CreateTopic(ctx, &pb.Topic{Name: fqTopic}); err != nil {
-		adminClient.Close()
-		conn.Close()
-		srv.Close()
+		_ = adminClient.Close()
+		_ = conn.Close()
+		_ = srv.Close()
 		t.Fatalf("create topic: %v", err)
 	}
 
@@ -86,9 +86,9 @@ func newPubsubTestEnv(t *testing.T, topic, sub string, orderingOn bool) *pubsubT
 			EnableExactlyOnceDelivery: false,
 		}
 		if _, err := adminClient.SubscriptionAdminClient.CreateSubscription(ctx, subReq); err != nil {
-			adminClient.Close()
-			conn.Close()
-			srv.Close()
+			_ = adminClient.Close()
+			_ = conn.Close()
+			_ = srv.Close()
 			t.Fatalf("create subscription: %v", err)
 		}
 	}
@@ -545,7 +545,7 @@ func TestAddListenerCtx_HonorsContextCancel(t *testing.T) {
 	defer env.Close()
 
 	p := &Provider{}
-	defer p.Close()
+	defer func() { _ = p.Close() }()
 
 	env.srv.Publish(env.fqTopic, []byte("l1"), nil)
 	env.srv.Publish(env.fqTopic, []byte("l2"), nil)

@@ -155,10 +155,10 @@ func TestVerify_BadSignature_Fails(t *testing.T) {
 	v := newVerifier(t, proj, jwks)
 
 	token := signer.mint(t, baseClaims(proj, "user-42"))
-	// Flip the last signature byte after re-encoding.
-	tampered := token[:len(token)-2] + string([]byte{token[len(token)-1] ^ 0x01, token[len(token)-2]})
-	// Simpler: just flip a character in the last quarter.
-	tampered = token[:len(token)-4] + "AAAA"
+	// Simplest tamper: replace the last four chars of the signature
+	// with a fixed run so any JOSE base64url decode still succeeds but
+	// the resulting bytes don't verify.
+	tampered := token[:len(token)-4] + "AAAA"
 
 	if _, err := v.VerifyToken(context.Background(), tampered); !errors.Is(err, auth.ErrInvalidSig) {
 		t.Fatalf("VerifyToken: got %v, want ErrInvalidSig", err)

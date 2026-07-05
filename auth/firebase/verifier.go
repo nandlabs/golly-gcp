@@ -251,7 +251,7 @@ func (v *Verifier) refresh(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("auth/firebase: JWKS fetch returned %s", resp.Status)
 	}

@@ -231,7 +231,7 @@ func (s *Store) Search(ctx context.Context, q vectorstore.Query) ([]vectorstore.
 	if err != nil {
 		return nil, fmt.Errorf("vectorstore/alloydb: search: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	hits := make([]vectorstore.Hit, 0, topK)
 	for rows.Next() {
 		var (

@@ -45,7 +45,7 @@ func TestNew_DDL_Cosine_HNSW(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	mock.ExpectExec(`CREATE EXTENSION IF NOT EXISTS vector`).WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectExec(`CREATE TABLE IF NOT EXISTS "docs" \(id TEXT PRIMARY KEY, embedding vector\(4\) NOT NULL, metadata JSONB\)`).WillReturnResult(sqlmock.NewResult(0, 0))
@@ -67,7 +67,7 @@ func TestNew_DDL_Cosine_HNSW(t *testing.T) {
 
 func TestUpsert_RoundTrip(t *testing.T) {
 	s, mock, db := newTestStore(t, Options{Table: "docs", Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Two rows -> multi-row VALUES + ON CONFLICT ... DO UPDATE.
 	mock.ExpectExec(`INSERT INTO "docs" \(id, embedding, metadata\) VALUES \(\$1, \$2, \$3\), \(\$4, \$5, \$6\) ON CONFLICT \(id\) DO UPDATE SET embedding = EXCLUDED\.embedding, metadata = EXCLUDED\.metadata`).
@@ -91,7 +91,7 @@ func TestUpsert_RoundTrip(t *testing.T) {
 
 func TestUpsert_RejectsDimMismatch(t *testing.T) {
 	s, _, db := newTestStore(t, Options{Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	err := s.Upsert(context.Background(),
 		vectorstore.Doc{ID: "a", Vector: vectorstore.Vector{1, 2}},
@@ -103,7 +103,7 @@ func TestUpsert_RejectsDimMismatch(t *testing.T) {
 
 func TestUpsert_RejectsInvalidDoc(t *testing.T) {
 	s, _, db := newTestStore(t, Options{Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	err := s.Upsert(context.Background(),
 		vectorstore.Doc{ID: "", Vector: vectorstore.Vector{1, 2, 3}},
@@ -115,7 +115,7 @@ func TestUpsert_RejectsInvalidDoc(t *testing.T) {
 
 func TestSearch_ReturnsHits(t *testing.T) {
 	s, mock, db := newTestStore(t, Options{Table: "docs", Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Cosine uses <=>; no filter WHERE clause.
 	pattern := regexp.QuoteMeta(`SELECT id, metadata, embedding <=> $1 AS distance FROM "docs" ORDER BY embedding <=> $1 LIMIT $2`)
@@ -154,7 +154,7 @@ func TestSearch_UsesConfiguredOperator(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(string(tc.metric), func(t *testing.T) {
 			s, mock, db := newTestStore(t, Options{Dimension: 2, SkipDDL: true, Metric: tc.metric})
-			defer db.Close()
+			defer func() { _ = db.Close() }()
 
 			mock.ExpectQuery(regexp.QuoteMeta(tc.op)).WithArgs(sqlmock.AnyArg(), 10).WillReturnRows(sqlmock.NewRows([]string{"id", "metadata", "distance"}))
 			if _, err := s.Search(context.Background(), vectorstore.Query{Vector: vectorstore.Vector{1, 2}}); err != nil {
@@ -169,7 +169,7 @@ func TestSearch_UsesConfiguredOperator(t *testing.T) {
 
 func TestSearch_MetadataFilter(t *testing.T) {
 	s, mock, db := newTestStore(t, Options{Table: "docs", Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Filter path adds `WHERE metadata @> $2` and shifts the LIMIT placeholder.
 	pattern := regexp.QuoteMeta(`SELECT id, metadata, embedding <=> $1 AS distance FROM "docs" WHERE metadata @> $2 ORDER BY embedding <=> $1 LIMIT $3`)
@@ -195,7 +195,7 @@ func TestSearch_MetadataFilter(t *testing.T) {
 
 func TestSearch_EmptyVector(t *testing.T) {
 	s, _, db := newTestStore(t, Options{Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	_, err := s.Search(context.Background(), vectorstore.Query{Vector: nil, TopK: 5})
 	if !errors.Is(err, vectorstore.ErrEmptyVector) {
@@ -205,7 +205,7 @@ func TestSearch_EmptyVector(t *testing.T) {
 
 func TestSearch_DimMismatch(t *testing.T) {
 	s, _, db := newTestStore(t, Options{Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	_, err := s.Search(context.Background(), vectorstore.Query{Vector: vectorstore.Vector{1, 2}})
 	if !errors.Is(err, vectorstore.ErrDimMismatch) {
@@ -215,7 +215,7 @@ func TestSearch_DimMismatch(t *testing.T) {
 
 func TestDelete_RemovesById(t *testing.T) {
 	s, mock, db := newTestStore(t, Options{Table: "docs", Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	pattern := regexp.QuoteMeta(`DELETE FROM "docs" WHERE id = ANY($1)`)
 	mock.ExpectExec(pattern).
@@ -232,7 +232,7 @@ func TestDelete_RemovesById(t *testing.T) {
 
 func TestDelete_EmptyNoop(t *testing.T) {
 	s, mock, db := newTestStore(t, Options{Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := s.Delete(context.Background()); err != nil {
 		t.Fatalf("Delete: %v", err)
@@ -245,7 +245,7 @@ func TestDelete_EmptyNoop(t *testing.T) {
 
 func TestClose_Idempotent(t *testing.T) {
 	s, _, db := newTestStore(t, Options{Dimension: 3, SkipDDL: true})
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := s.Close(); err != nil {
 		t.Fatalf("first Close: %v", err)
@@ -271,7 +271,7 @@ func TestClose_Idempotent(t *testing.T) {
 
 func TestNew_ValidatesOptions(t *testing.T) {
 	db, _, _ := sqlmock.New()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if _, err := New(Options{DB: nil, Dimension: 3, SkipDDL: true}); err == nil {
 		t.Error("want error for nil DB")

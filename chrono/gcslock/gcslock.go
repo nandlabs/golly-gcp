@@ -272,7 +272,7 @@ func (b *gcsBackend) read(ctx context.Context) ([]byte, int64, bool, error) {
 		}
 		return nil, 0, false, err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 	body, err := io.ReadAll(r)
 	if err != nil {
 		return nil, 0, false, err

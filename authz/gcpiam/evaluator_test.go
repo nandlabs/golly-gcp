@@ -91,7 +91,7 @@ func TestCachedEvaluator_HitsCacheBetweenRefresh(t *testing.T) {
 	// refresh=0 disables the background loop; we drive Refresh manually.
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0,
 		WithInitialPermissions("compute.instances.get"))
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	if err := e.Refresh(context.Background()); err != nil {
 		t.Fatalf("Refresh: %v", err)
@@ -116,7 +116,7 @@ func TestCachedEvaluator_RefreshUpdatesCache(t *testing.T) {
 	fc := newFakeCaller("compute.instances.get")
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0,
 		WithInitialPermissions("compute.instances.get"))
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	if err := e.Refresh(context.Background()); err != nil {
 		t.Fatalf("first Refresh: %v", err)
@@ -151,7 +151,7 @@ func TestCachedEvaluator_MissingPermission_ReturnsFalse(t *testing.T) {
 	fc := newFakeCaller("compute.instances.get") // .list is NOT granted
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0,
 		WithInitialPermissions("compute.instances.get", "compute.instances.list"))
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	if err := e.Refresh(context.Background()); err != nil {
 		t.Fatalf("Refresh: %v", err)
@@ -174,7 +174,7 @@ func TestCachedEvaluator_UnknownPrincipal_ReturnsFalse(t *testing.T) {
 	fc := newFakeCaller("compute.instances.get")
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0,
 		WithInitialPermissions("compute.instances.get"))
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 	if err := e.Refresh(context.Background()); err != nil {
 		t.Fatalf("Refresh: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestCachedEvaluator_UnknownPrincipal_ReturnsFalse(t *testing.T) {
 	e2 := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0,
 		WithInitialPermissions("compute.instances.get"),
 		WithExpectedMember("serviceAccount:svc@proj.iam.gserviceaccount.com"))
-	defer e2.Close()
+	defer func() { _ = e2.Close() }()
 	if err := e2.Refresh(context.Background()); err != nil {
 		t.Fatalf("Refresh (e2): %v", err)
 	}
@@ -212,7 +212,7 @@ func TestCachedEvaluator_BackgroundLoopRefreshes(t *testing.T) {
 	fc := newFakeCaller("compute.instances.get")
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 20*time.Millisecond,
 		WithInitialPermissions("compute.instances.get"))
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	// Wait for at least one background refresh to land.
 	deadline := time.Now().Add(2 * time.Second)
@@ -236,7 +236,7 @@ func TestCachedEvaluator_RefreshError_LeavesCacheIntact(t *testing.T) {
 	fc := newFakeCaller("compute.instances.get")
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0,
 		WithInitialPermissions("compute.instances.get"))
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 	if err := e.Refresh(context.Background()); err != nil {
 		t.Fatalf("first Refresh: %v", err)
 	}

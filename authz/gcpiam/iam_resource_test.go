@@ -9,7 +9,7 @@ func TestCan_IAMResource_LiveCall_Granted(t *testing.T) {
 	t.Parallel()
 	fc := newFakeCaller("storage.objects.get")
 	e := NewCachedEvaluatorFromCaller(fc, "unused", 0)
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	p := &principalWithID{id: "user:alice@example.com"}
 	res := IAMResource{
@@ -42,7 +42,7 @@ func TestCan_IAMResource_LiveCall_Denied(t *testing.T) {
 	t.Parallel()
 	fc := newFakeCaller() // nothing granted
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0)
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	p := &principalWithID{id: "user:alice@example.com"}
 	res := &IAMResource{
@@ -58,7 +58,7 @@ func TestCan_IAMResource_NilCtx_UsesBackground(t *testing.T) {
 	t.Parallel()
 	fc := newFakeCaller("compute.instances.get")
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0)
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	p := &principalWithID{id: "user:alice@example.com"}
 	// Ctx is nil — must not panic; evaluator falls back to context.Background().
@@ -72,7 +72,7 @@ func TestCan_IAMResource_EmptyName_FallsBackToEvaluatorResource(t *testing.T) {
 	t.Parallel()
 	fc := newFakeCaller("compute.instances.get")
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0)
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	p := &principalWithID{id: "user:alice@example.com"}
 	res := IAMResource{Ctx: context.Background()} // no Name
@@ -91,7 +91,7 @@ func TestCan_IAMResource_UnknownPrincipal_ReturnsFalse(t *testing.T) {
 	t.Parallel()
 	fc := newFakeCaller("compute.instances.get")
 	e := NewCachedEvaluatorFromCaller(fc, "projects/demo", 0)
-	defer e.Close()
+	defer func() { _ = e.Close() }()
 
 	res := IAMResource{Ctx: context.Background(), Name: "projects/demo"}
 	// nil principal → extractor returns "" → false, no live call made.

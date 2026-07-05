@@ -3,6 +3,7 @@ module oss.nandlabs.io/golly-gcp
 go 1.25.8
 
 require (
+	cloud.google.com/go/firestore v1.22.0
 	cloud.google.com/go/iam v1.11.0
 	cloud.google.com/go/pubsub/v2 v2.6.0
 	cloud.google.com/go/resourcemanager v1.15.0

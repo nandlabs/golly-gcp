@@ -3,14 +3,17 @@ module oss.nandlabs.io/golly-gcp
 go 1.25.8
 
 require (
+	cloud.google.com/go/aiplatform v1.125.0
 	cloud.google.com/go/firestore v1.22.0
 	cloud.google.com/go/iam v1.11.0
 	cloud.google.com/go/pubsub/v2 v2.6.0
 	cloud.google.com/go/resourcemanager v1.15.0
 	cloud.google.com/go/secretmanager v1.20.0
 	cloud.google.com/go/storage v1.63.0
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/googleapis/gax-go/v2 v2.22.0
+	github.com/pgvector/pgvector-go v0.4.0
 	github.com/redis/go-redis/v9 v9.21.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.21.0

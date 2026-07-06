@@ -29,6 +29,7 @@ Golly GCP provides Google Cloud service implementations for the full set of [Gol
 
 | golly-gcp | golly  | google.golang.org/api |
 | --------- | ------ | --------------------- |
+| v1.1.0    | v1.8.0 | v0.287.0              |
 | v1.0.0    | v1.7.0 | v0.287.0              |
 | v0.2.0    | v1.5.0 | v0.276.0              |
 | v0.1.0    | v1.4.0 | v0.271.0              |
@@ -36,7 +37,7 @@ Golly GCP provides Google Cloud service implementations for the full set of [Gol
 ## Installation
 
 ```bash
-go get oss.nandlabs.io/golly-gcp@v1.0.0
+go get oss.nandlabs.io/golly-gcp@v1.1.0
 ```
 
 ## Packages
@@ -58,7 +59,7 @@ go get oss.nandlabs.io/golly-gcp@v1.0.0
 
 | Package                                       | Description                                                                                                             |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [genai](genai/README.md)                      | Google GenAI provider for Vertex AI, Gemini API, and Model Garden — streaming, tool use, structured output, Embedder    |
+| [genai](genai/README.md)                      | Google GenAI provider for Vertex AI, Gemini API, and Model Garden — streaming, tool use, structured output, Embedder, and a Gemini model catalog (`CapabilityProvider`) for the golly v1.8.0 model router |
 | [vectorstore/vertex](vectorstore/vertex/README.md) | Vertex AI Vector Search backend — batched upserts via IndexServiceClient, FindNeighbors via MatchServiceClient       |
 | [vectorstore/alloydb](vectorstore/alloydb/README.md) | AlloyDB / Cloud SQL pgvector backend on a caller-owned `*sql.DB` — HNSW / IVFFlat compatible, JSONB metadata filter |
 

@@ -17,6 +17,7 @@ Google Cloud GenAI implementation of the [golly genai](https://pkg.go.dev/oss.na
 - [Options](#options)
 - [Tool Use (Function Calling)](#tool-use-function-calling)
 - [Streaming](#streaming)
+- [Model Router / Capabilities](#model-router--capabilities)
 - [Schema / Structured Output](#schema--structured-output)
 - [Error Handling](#error-handling)
 - [API Reference](#api-reference)
@@ -308,6 +309,32 @@ for _, candidate := range resp.Candidates {
     }
 }
 ```
+
+## Model Router / Capabilities
+
+The provider implements golly's optional `genai.CapabilityProvider` interface
+(golly **v1.8.0+**), advertising a `ModelCatalog()` of structured `ModelInfo` —
+capabilities, context windows, and per-Mtok pricing — for the Gemini 2.5 / 2.0
+families and the Vertex text-embedding models. The v1.8.0 model router discovers
+this by type assertion, so Gemini models participate in capability-based routing
+automatically. The existing `Models() []string` method is unchanged.
+
+```go
+provider, _ := gcpgenai.NewGCPProvider(ctx, &gcpgenai.ProviderConfig{ /* ... */ })
+
+set := genai.NewProviderSet(provider)
+router, _ := genai.NewRouter(
+    genai.WithProviders(set),
+    genai.WithStrategy(genai.NewCapabilityStrategy()),
+)
+// A vision task resolves to a vision-capable Gemini model:
+route, _, _ := router.Resolve(genai.Task{
+    RequiredCapabilities: []genai.Capability{genai.CapVision},
+}, nil)
+```
+
+Operator policy can override compiled-in pricing or disable models/capabilities
+via `genai.RoutingConfig` (see the golly genai router docs).
 
 ## Schema / Structured Output
 

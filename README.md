@@ -23,19 +23,20 @@
 
 ## Overview
 
-Golly GCP provides Google Cloud service implementations for core [Golly](https://github.com/nandlabs/golly) interfaces — VFS, Messaging, GenAI, and Secrets. It uses the official Google Cloud client libraries and follows Golly's provider pattern: blank-import a package to auto-register it, then use standard Golly managers with `gs://` or `pubsub://` URLs.
+Golly GCP provides Google Cloud service implementations for the full set of [Golly](https://github.com/nandlabs/golly) capability interfaces — VFS, Messaging, Cache, Secrets, GenAI, Auth, Authz, Vectorstore, and Chrono leader election. It uses the official Google Cloud client libraries and follows Golly's provider pattern: blank-import a package to auto-register it, then use standard Golly managers with `gs://` or `pubsub://` URLs.
 
 ## Compatibility
 
 | golly-gcp | golly  | google.golang.org/api |
 | --------- | ------ | --------------------- |
+| v1.0.0    | v1.7.0 | v0.287.0              |
 | v0.2.0    | v1.5.0 | v0.276.0              |
 | v0.1.0    | v1.4.0 | v0.271.0              |
 
 ## Installation
 
 ```bash
-go get oss.nandlabs.io/golly-gcp@v0.2.0
+go get oss.nandlabs.io/golly-gcp@v1.0.0
 ```
 
 ## Packages
@@ -46,29 +47,51 @@ go get oss.nandlabs.io/golly-gcp@v0.2.0
 | -------------------------- | ----------------------------------------------------------------------------------------------------- |
 | [gcpsvc](gcpsvc/README.md) | Centralized GCP config management with named registry, multi-project/region, and URL-based resolution |
 
+### 🔐 Auth & Authorization
+
+| Package                                    | Description                                                                                                       |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| [auth/firebase](auth/firebase/README.md)   | Firebase Auth JWT verifier (JWKS-cached RS256) + Firestore-backed `auth.SessionStore` with `ListByUser` helper    |
+| [authz/gcpiam](authz/gcpiam/README.md)     | Cloud IAM `authz.Policy` — cached `TestIamPermissions` evaluator + `IAMResource{Ctx,Name}` live-check envelope    |
+
 ### 🤖 AI & Intelligence
 
-| Package                  | Description                                                                                                             |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| [genai](genai/README.md) | Google GenAI provider for Vertex AI, Gemini API, and Model Garden — supports streaming, tool use, and structured output |
+| Package                                       | Description                                                                                                             |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [genai](genai/README.md)                      | Google GenAI provider for Vertex AI, Gemini API, and Model Garden — streaming, tool use, structured output, Embedder    |
+| [vectorstore/vertex](vectorstore/vertex/README.md) | Vertex AI Vector Search backend — batched upserts via IndexServiceClient, FindNeighbors via MatchServiceClient       |
+| [vectorstore/alloydb](vectorstore/alloydb/README.md) | AlloyDB / Cloud SQL pgvector backend on a caller-owned `*sql.DB` — HNSW / IVFFlat compatible, JSONB metadata filter |
 
 ### 🗃️ Storage
 
-| Package            | Description                                                                                              |
-| ------------------ | -------------------------------------------------------------------------------------------------------- |
-| [gs](gs/README.md) | Google Cloud Storage implementation of the golly VFS interface — read, write, copy, move, list, and walk |
+| Package            | Description                                                                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [gs](gs/README.md) | Google Cloud Storage implementation of the golly VFS interface — read, write, copy, move, list, walk; VFileSystemCtx, Lister, RangeReader, and sentinel-error mapping |
 
-### � Secrets
+### 🧠 Cache
+
+| Package                                          | Description                                                                                                    |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| [cache/memorystore](cache/memorystore/README.md) | Memorystore Redis backend for `cache.Cache[K,V]` + `Sweeper` + `Loader` (single-flight); OAuth2 IAM auth       |
+
+### 🕐 Scheduling & Leader Election
+
+| Package                                            | Description                                                                                                     |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| [chrono/firestorelock](chrono/firestorelock/README.md) | `chrono.LeaderElector` on a Firestore doc — transactional acquire / renew / steal with expiring leases      |
+| [chrono/gcslock](chrono/gcslock/README.md)             | `chrono.LeaderElector` on a GCS object — `DoesNotExist` acquire + `GenerationMatch` renew/steal              |
+
+### 🔑 Secrets
 
 | Package                      | Description                                                                                                          |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| [secrets](secrets/README.md) | GCP Secret Manager implementation of the golly secrets store — get, write, delete, list with caching and versioning  |
+| [secrets](secrets/README.md) | GCP Secret Manager implementation of the golly secrets store — get, write, delete, list; `NewNamespacedGCPSecretStore` convenience constructor with Authorizer wiring |
 
-### �📡 Messaging
+### 📡 Messaging
 
-| Package                    | Description                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| [pubsub](pubsub/README.md) | Google Cloud Pub/Sub implementation of the golly messaging provider — publish, receive, listeners, ordered delivery |
+| Package                    | Description                                                                                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [pubsub](pubsub/README.md) | Google Cloud Pub/Sub provider — publish, receive, listeners; `ListenerRemover`, `Producer/ReceiverCtx`, `Keyed → OrderingKey`, `ObservableProvider`, broker-targeted options |
 
 > 📖 Full API documentation available at [pkg.go.dev](https://pkg.go.dev/oss.nandlabs.io/golly-gcp)
 

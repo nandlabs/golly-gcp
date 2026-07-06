@@ -261,5 +261,5 @@ gotest.tools/v3 v3.5.2 h1:7koQfIKdy+I8UTetycgUqXWSDwpgv193Ka+qRsmBY8Q=
 gotest.tools/v3 v3.5.2/go.mod h1:LtdLGcnqToBH83WByAAi/wiwSFCArdFIUV/xxN4pcjA=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
-oss.nandlabs.io/golly v1.7.0 h1:JoWW2nmfcHAy0tC1GiGnSnYSOgjUbTyJ62219HPfWmM=
-oss.nandlabs.io/golly v1.7.0/go.mod h1:EwNub/96FHpzWO55LN2RNiDTspB/UerdmLInHebC8o8=
+oss.nandlabs.io/golly v1.8.0 h1:+SSc2sRMV8XLAZJwV6LRdfidr0vQsz1v1p2HJHUQ0d0=
+oss.nandlabs.io/golly v1.8.0/go.mod h1:EwNub/96FHpzWO55LN2RNiDTspB/UerdmLInHebC8o8=

@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/aiplatform v1.125.0
 	cloud.google.com/go/firestore v1.22.0
 	cloud.google.com/go/iam v1.11.0
-	cloud.google.com/go/pubsub/v2 v2.6.0
+	cloud.google.com/go/pubsub/v2 v2.6.1
 	cloud.google.com/go/resourcemanager v1.15.0
 	cloud.google.com/go/secretmanager v1.20.0
 	cloud.google.com/go/storage v1.63.0
@@ -51,7 +51,6 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
-	go.einride.tech/aip v0.83.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.42.0 // indirect

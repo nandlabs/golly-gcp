@@ -11,7 +11,7 @@ require (
 	cloud.google.com/go/secretmanager v1.20.0
 	cloud.google.com/go/storage v1.63.1
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/alicebob/miniredis/v2 v2.38.0
+	github.com/alicebob/miniredis/v2 v2.40.0
 	github.com/googleapis/gax-go/v2 v2.23.0
 	github.com/pgvector/pgvector-go v0.4.0
 	github.com/redis/go-redis/v9 v9.21.0

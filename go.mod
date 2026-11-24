@@ -16,7 +16,7 @@ require (
 	github.com/pgvector/pgvector-go v0.4.0
 	github.com/redis/go-redis/v9 v9.21.0
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.25.0
 	google.golang.org/api v0.288.0
 	google.golang.org/genai v1.63.0
 	google.golang.org/grpc v1.85.0
